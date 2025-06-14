@@ -5,12 +5,19 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+type QueryBuilder[T any] interface {
+	GetOne(ctx context.Context, db Queryable) (*T, error)
+	GetMany(ctx context.Context, db Queryable) ([]*T, error)
+	Wrap(name string, sb SelectBuilder) QueryBuilder[T]
+	MapAliases(aliasMapper func(Alias)) QueryBuilder[T]
+}
+
 type Returnable interface {
 	UsingTables() []string
 	With() string
-	GetReturning() []alias
+	GetReturning() []Alias
 	SetReturning([]any) error
-	SetReturningAliases([]alias)
+	SetReturningAliases([]Alias)
 	Sql(options *driver.SqlOptions) (string, []interface{}, error)
 	LimitReturningOne()
 }
@@ -25,16 +32,16 @@ type query[T any] struct {
 	with        string
 	ret         Returnable
 	wrap        *wrapper
-	aliasMapper func(*alias)
+	aliasMapper func(Alias)
 	usingTables []string
 }
 
 type wrapper struct {
 	name string
-	sb   *SelectBuilder
+	sb   SelectBuilder
 }
 
-func Query[T any](ret Returnable) *query[T] {
+func Query[T any](ret Returnable) QueryBuilder[T] {
 	return &query[T]{
 		usingTables: ret.UsingTables(),
 		with:        ret.With(),
@@ -114,7 +121,7 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 	return result, nil
 }
 
-func (q *query[T]) Wrap(name string, sb *SelectBuilder) *query[T] {
+func (q *query[T]) Wrap(name string, sb SelectBuilder) QueryBuilder[T] {
 	q.wrap = &wrapper{
 		name: name,
 		sb:   sb,
@@ -123,7 +130,7 @@ func (q *query[T]) Wrap(name string, sb *SelectBuilder) *query[T] {
 	return q
 }
 
-func (q *query[T]) MapAliases(aliasMapper func(*alias)) *query[T] {
+func (q *query[T]) MapAliases(aliasMapper func(Alias)) QueryBuilder[T] {
 	q.aliasMapper = aliasMapper
 	return q
 }
@@ -137,7 +144,7 @@ func (q *query[T]) getQuery() driver.Sqler {
 	if q.aliasMapper != nil {
 		aliases := q.ret.GetReturning()
 		for i := 0; i < len(aliases); i++ {
-			q.aliasMapper(&aliases[i])
+			q.aliasMapper(aliases[i])
 		}
 	}
 

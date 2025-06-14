@@ -5,20 +5,24 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+type ExecBuilder interface {
+	With(ctx context.Context, db Executable) (driver.ExecResult, error)
+}
+
 type Executable interface {
 	Exec(ctx context.Context, sql string, args ...any) (driver.ExecResult, error)
 	Sql(sqler driver.Sqler) (string, []any, error)
 }
 
-type executor struct {
+type execBuilder struct {
 	driver.Sqler
 }
 
-func Exec(sqler driver.Sqler) *executor {
-	return &executor{sqler}
+func Exec(sqler driver.Sqler) ExecBuilder {
+	return &execBuilder{sqler}
 }
 
-func (e *executor) With(ctx context.Context, db Executable) (driver.ExecResult, error) {
+func (e *execBuilder) With(ctx context.Context, db Executable) (driver.ExecResult, error) {
 	sql, args, err := db.Sql(e.Sqler)
 	if err != nil {
 		return nil, err

@@ -9,6 +9,23 @@ import (
 	"math"
 )
 
+type Paginator[T any] interface {
+	With(ctx context.Context, db Queryable) (*PaginateResult[T], error)
+	Fields(fields ...any) Paginator[T]
+	MaxFilterDepth(depth uint) Paginator[T]
+	MaxLimit(limit uint64) Paginator[T]
+	MinLimit(limit uint64) Paginator[T]
+	Having(exp driver.Sqler) Paginator[T]
+	BaseWhere(exp driver.Sqler) Paginator[T]
+	PostWhere(exp driver.Sqler) Paginator[T]
+	Join(table any, on ...driver.Sqler) Paginator[T]
+	LeftJoin(table any, on ...driver.Sqler) Paginator[T]
+	RightJoin(table any, on ...driver.Sqler) Paginator[T]
+	InnerJoin(table any, on ...driver.Sqler) Paginator[T]
+	CrossJoin(table any, on ...driver.Sqler) Paginator[T]
+	GroupBy(groups ...any) Paginator[T]
+}
+
 type PaginateResult[T any] struct {
 	TotalRows uint64
 	Rows      []*T
@@ -41,9 +58,9 @@ type PaginateOrder struct {
 type paginate[T any] struct {
 	fieldsAllowed []string
 	request       *PaginateRequest
-	rowsSb        *SelectBuilder
-	rowsSbWrap    *SelectBuilder
-	countSbWrap   *SelectBuilder
+	rowsSb        SelectBuilder
+	rowsSbWrap    SelectBuilder
+	countSbWrap   SelectBuilder
 	minLimit      uint64
 	maxLimit      uint64
 	maxDepth      uint
@@ -59,7 +76,7 @@ const (
 	defaultFilterDepth = 5
 )
 
-func Paginate[T any](table string, request *PaginateRequest, fieldsAllowed []string) *paginate[T] {
+func Paginate[T any](table string, request *PaginateRequest, fieldsAllowed []string) Paginator[T] {
 	return &paginate[T]{
 		request:       request,
 		rowsSb:        Select().From(table),
@@ -98,12 +115,9 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 	pg.rowsSbWrap.Limit(limit)
 	pg.rowsSbWrap.Offset(offset)
 
-	rows, err := Query[T](pg.rowsSb).Wrap("result", pg.rowsSbWrap).MapAliases(func(al *alias) {
-		if al.pure {
-			if col, ok := al.expr.(Column); ok {
-				al.pure = false
-				al.alias = renameColumnAliasName(string(col))
-			}
+	rows, err := Query[T](pg.rowsSb).Wrap("result", pg.rowsSbWrap).MapAliases(func(al Alias) {
+		if al.IsPure() {
+			al.Rename(renameAlias(al.Alias()))
 		}
 	}).GetMany(ctx, db)
 	if err != nil {
@@ -123,68 +137,68 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 	}, nil
 }
 
-func (pg *paginate[T]) Fields(fields ...any) *paginate[T] {
-	pg.rowsSb.setFields(fields)
+func (pg *paginate[T]) Fields(fields ...any) Paginator[T] {
+	pg.rowsSb.SetReturning(fields)
 	return pg
 }
 
-func (pg *paginate[T]) MaxFilterDepth(depth uint) *paginate[T] {
+func (pg *paginate[T]) MaxFilterDepth(depth uint) Paginator[T] {
 	pg.maxDepth = depth
 	return pg
 }
 
-func (pg *paginate[T]) MaxLimit(limit uint64) *paginate[T] {
+func (pg *paginate[T]) MaxLimit(limit uint64) Paginator[T] {
 	pg.maxLimit = limit
 	return pg
 }
 
-func (pg *paginate[T]) MinLimit(limit uint64) *paginate[T] {
+func (pg *paginate[T]) MinLimit(limit uint64) Paginator[T] {
 	pg.minLimit = limit
 	return pg
 }
 
-func (pg *paginate[T]) Having(exp driver.Sqler) *paginate[T] {
+func (pg *paginate[T]) Having(exp driver.Sqler) Paginator[T] {
 	pg.rowsSb.Having(exp)
 	return pg
 }
 
-func (pg *paginate[T]) BaseWhere(exp driver.Sqler) *paginate[T] {
+func (pg *paginate[T]) BaseWhere(exp driver.Sqler) Paginator[T] {
 	pg.rowsSb.Where(exp)
 	return pg
 }
 
-func (pg *paginate[T]) PostWhere(exp driver.Sqler) *paginate[T] {
+func (pg *paginate[T]) PostWhere(exp driver.Sqler) Paginator[T] {
 	pg.rowsSbWrap.Where(exp)
 	pg.countSbWrap.Where(exp)
 	return pg
 }
 
-func (pg *paginate[T]) Join(table any, on ...driver.Sqler) *paginate[T] {
+func (pg *paginate[T]) Join(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.Join(table, on...)
 	return pg
 }
 
-func (pg *paginate[T]) LeftJoin(table any, on ...driver.Sqler) *paginate[T] {
+func (pg *paginate[T]) LeftJoin(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.LeftJoin(table, on...)
 	return pg
 }
 
-func (pg *paginate[T]) RightJoin(table any, on ...driver.Sqler) *paginate[T] {
+func (pg *paginate[T]) RightJoin(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.RightJoin(table, on...)
 	return pg
 }
 
-func (pg *paginate[T]) InnerJoin(table any, on ...driver.Sqler) *paginate[T] {
+func (pg *paginate[T]) InnerJoin(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.InnerJoin(table, on...)
 	return pg
 }
 
-func (pg *paginate[T]) CrossJoin(table any, on ...driver.Sqler) *paginate[T] {
+func (pg *paginate[T]) CrossJoin(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.CrossJoin(table, on...)
 	return pg
 }
 
-func (pg *paginate[T]) GroupBy(groups ...any) *paginate[T] {
+func (pg *paginate[T]) GroupBy(groups ...any) Paginator[T] {
 	pg.rowsSb.GroupBy(groups...)
 	return pg
 }
@@ -201,7 +215,7 @@ func (pg *paginate[T]) parseFilters(filters *FilterGroup, depth uint) (driver.Sq
 	var result []driver.Sqler
 	for i := range filters.Filters {
 		if !pg.isFieldAllowed(filters.Filters[i].Key) {
-			return nil, fmt.Errorf("paginate: field %q is not allowed", filters.Filters[i].Key)
+			return nil, fmt.Errorf("paginate: target %q is not allowed", filters.Filters[i].Key)
 		}
 
 		operator, err := getFilterOperator(&filters.Filters[i])
@@ -234,17 +248,17 @@ func (pg *paginate[T]) parseFilters(filters *FilterGroup, depth uint) (driver.Sq
 	return And(result), nil
 }
 
-func (pg *paginate[T]) parseOrders(orders []PaginateOrder) ([]order, error) {
-	result := make([]order, len(orders))
+func (pg *paginate[T]) parseOrders(orders []PaginateOrder) ([]Order, error) {
+	result := make([]Order, 0, len(orders))
 	for i := range orders {
 		if !pg.isFieldAllowed(orders[i].Key) {
-			return nil, fmt.Errorf("paginate: field %q is not allowed", orders[i].Key)
+			return nil, fmt.Errorf("paginate: target %q is not allowed", orders[i].Key)
 		}
 
 		if orders[i].Desc {
-			result[i] = Desc(orders[i].Key)
+			result = append(result, Desc(orders[i].Key))
 		} else {
-			result[i] = Asc(orders[i].Key)
+			result = append(result, Asc(orders[i].Key))
 		}
 	}
 
@@ -290,7 +304,7 @@ func getFilterOperator(filter *Filter) (driver.Sqler, error) {
 	return nil, fmt.Errorf("invalid filter operator: %s", filter.Operator)
 }
 
-func renameColumnAliasName(alias string) string {
+func renameAlias(alias string) string {
 	var buf bytes.Buffer
 	for i := 0; i < len(alias); i++ {
 		r := alias[i]

@@ -6,12 +6,16 @@ import (
 	"reflect"
 )
 
+type PutBuilder[T any] interface {
+	With(ctx context.Context, db Queryable) error
+}
+
 type put[T any] struct {
 	table string
 	item  *T
 }
 
-func Put[T any](table string, model *T) *put[T] {
+func Put[T any](table string, model *T) PutBuilder[T] {
 	return &put[T]{
 		table: table,
 		item:  model,
@@ -26,7 +30,7 @@ func (p *put[T]) With(ctx context.Context, db Queryable) error {
 
 	fields, ok := md.tags[p.table]
 	if !ok {
-		return fmt.Errorf("no such field for model %s", p.table)
+		return fmt.Errorf("no such target for model %s", p.table)
 	}
 
 	setters, err := getSettersKeysByTags(md, p.table, fields)
@@ -50,7 +54,7 @@ func (p *put[T]) With(ctx context.Context, db Queryable) error {
 		updates[fields[i]] = Excluded(fields[i])
 	}
 
-	aliases := make([]alias, len(fields))
+	aliases := make([]Alias, len(fields))
 	for i := range fields {
 		aliases[i] = columnAlias(Column(fields[i]))
 	}

@@ -6,28 +6,39 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+type UpdateBuilder interface {
+	Where(exp driver.Sqler) UpdateBuilder
+	Returning(keys ...any) UpdateBuilder
+	LimitReturningOne()
+	With() string
+	UsingTables() []string
+	GetReturning() []Alias
+	SetReturning(keys []any) error
+	SetReturningAliases(keys []Alias)
+	Sql(options *driver.SqlOptions) (string, []interface{}, error)
+}
+
 type Updates map[string]any
 
-type UpdateBuilder struct {
-	table         *alias
-	returningKeys []alias
+type updateBuilder struct {
+	table         Alias
+	returningKeys []Alias
 	updatesKeys   []Column
 	updatesVals   []driver.Sqler
 	where         And
 	err           error
 }
 
-func Update(table any, updates Updates) *UpdateBuilder {
-	ub := &UpdateBuilder{}
+func Update(table any, updates Updates) UpdateBuilder {
+	ub := &updateBuilder{}
 	if table != nil {
 		switch val := table.(type) {
 		case string:
-			al := columnAlias(Column(val))
-			ub.table = &al
-		case alias:
-			ub.table = &val
+			ub.table = columnAlias(Column(val))
+		case Alias:
+			ub.table = val
 		default:
-			ub.err = fmt.Errorf("%w: %T. Must be a string or alias", ErrUnsupportedType, table)
+			ub.err = fmt.Errorf("%w: %T must be a string or Alias", ErrUnsupportedType, table)
 			return ub
 		}
 	}
@@ -36,7 +47,7 @@ func Update(table any, updates Updates) *UpdateBuilder {
 	return ub
 }
 
-func (ub *UpdateBuilder) Where(exp driver.Sqler) *UpdateBuilder {
+func (ub *updateBuilder) Where(exp driver.Sqler) UpdateBuilder {
 	if exp != nil {
 		ub.where = append(ub.where, exp)
 	}
@@ -44,7 +55,7 @@ func (ub *UpdateBuilder) Where(exp driver.Sqler) *UpdateBuilder {
 	return ub
 }
 
-func (ub *UpdateBuilder) Returning(keys ...any) *UpdateBuilder {
+func (ub *updateBuilder) Returning(keys ...any) UpdateBuilder {
 	err := ub.setReturning(keys)
 	if err != nil {
 		ub.err = err
@@ -53,7 +64,7 @@ func (ub *UpdateBuilder) Returning(keys ...any) *UpdateBuilder {
 	return ub
 }
 
-func (ub *UpdateBuilder) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
+func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
 	if ub.err != nil {
 		return "", nil, ub.err
 	}
@@ -111,47 +122,47 @@ func (ub *UpdateBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	return buf.String(), args, nil
 }
 
-func (ub *UpdateBuilder) LimitReturningOne() {
+func (ub *updateBuilder) LimitReturningOne() {
 	return
 }
 
-func (ub *UpdateBuilder) With() string {
+func (ub *updateBuilder) With() string {
 	return ub.table.Alias()
 }
 
-func (ub *UpdateBuilder) UsingTables() []string {
+func (ub *updateBuilder) UsingTables() []string {
 	return []string{ub.table.Alias()}
 }
 
-func (ub *UpdateBuilder) GetReturning() []alias {
+func (ub *updateBuilder) GetReturning() []Alias {
 	return ub.returningKeys
 }
 
-func (ub *UpdateBuilder) SetReturning(keys []any) error {
+func (ub *updateBuilder) SetReturning(keys []any) error {
 	return ub.setReturning(keys)
 }
 
-func (ub *UpdateBuilder) SetReturningAliases(keys []alias) {
+func (ub *updateBuilder) SetReturningAliases(keys []Alias) {
 	ub.returningKeys = keys
 }
 
-func (ub *UpdateBuilder) setReturning(keys []any) error {
+func (ub *updateBuilder) setReturning(keys []any) error {
 	ub.returningKeys = nil
 	for i := range keys {
 		switch val := keys[i].(type) {
 		case string:
 			ub.returningKeys = append(ub.returningKeys, columnAlias(Column(val)))
-		case alias:
+		case Alias:
 			ub.returningKeys = append(ub.returningKeys, val)
 		default:
-			return fmt.Errorf("%w: %T. Must be a string or alias", ErrUnsupportedType, keys[i])
+			return fmt.Errorf("%w: %T must be a string or Alias", ErrUnsupportedType, keys[i])
 		}
 	}
 
 	return nil
 }
 
-func (ub *UpdateBuilder) setUpdates(updates Updates) {
+func (ub *updateBuilder) setUpdates(updates Updates) {
 	ub.updatesKeys = nil
 	ub.updatesVals = nil
 

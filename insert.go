@@ -7,12 +7,26 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+type InsertBuilder interface {
+	Columns(columns ...string) InsertBuilder
+	Values(values ...any) InsertBuilder
+	OnConflict(target any, do driver.Sqler) InsertBuilder
+	Returning(keys ...any) InsertBuilder
+	LimitReturningOne()
+	With() string
+	UsingTables() []string
+	GetReturning() []Alias
+	SetReturning(keys []any) error
+	SetReturningAliases(keys []Alias)
+	Sql(options *driver.SqlOptions) (string, []interface{}, error)
+}
+
 type Inserting map[string]any
 
-type InsertBuilder struct {
-	into          alias
+type insertBuilder struct {
+	into          Alias
 	onConflict    *conflict
-	returningKeys []alias
+	returningKeys []Alias
 	insertingKeys []Column
 	insertingVals [][]any
 	err           error
@@ -22,22 +36,22 @@ var (
 	ErrNoInsertValues = errors.New("no insert values")
 )
 
-func InsertMany(into any) *InsertBuilder {
-	ib := &InsertBuilder{}
+func InsertMany(into any) InsertBuilder {
+	ib := &insertBuilder{}
 	ib.setInto(into)
 
 	return ib
 }
 
-func Insert(into any, inserting Inserting) *InsertBuilder {
-	ib := &InsertBuilder{}
+func Insert(into any, inserting Inserting) InsertBuilder {
+	ib := &insertBuilder{}
 
 	ib.setInto(into)
 	ib.setInserting(inserting)
 	return ib
 }
 
-func (ib *InsertBuilder) Columns(columns ...string) *InsertBuilder {
+func (ib *insertBuilder) Columns(columns ...string) InsertBuilder {
 	ib.insertingKeys = make([]Column, len(columns))
 	for i, col := range columns {
 		ib.insertingKeys[i] = Column(col)
@@ -46,28 +60,28 @@ func (ib *InsertBuilder) Columns(columns ...string) *InsertBuilder {
 	return ib
 }
 
-func (ib *InsertBuilder) Values(values ...any) *InsertBuilder {
+func (ib *insertBuilder) Values(values ...any) InsertBuilder {
 	ib.insertingVals = append(ib.insertingVals, values)
 	return ib
 }
 
-func (ib *InsertBuilder) OnConflict(target any, do driver.Sqler) *InsertBuilder {
-	conf := conflict{expr: do}
+func (ib *insertBuilder) OnConflict(target any, do driver.Sqler) InsertBuilder {
+	conf := &conflict{expr: do}
 	switch val := target.(type) {
 	case string:
 		conf.target = columnAlias(Column(val))
-	case alias:
+	case Alias:
 		conf.target = val
 	default:
-		ib.err = fmt.Errorf("%w: %T. Must be a string or alias", ErrUnsupportedType, target)
+		ib.err = fmt.Errorf("%w: %T must be a string or Alias", ErrUnsupportedType, target)
 		return ib
 	}
 
-	ib.onConflict = &conf
+	ib.onConflict = conf
 	return ib
 }
 
-func (ib *InsertBuilder) Returning(keys ...any) *InsertBuilder {
+func (ib *insertBuilder) Returning(keys ...any) InsertBuilder {
 	err := ib.setReturning(keys)
 	if err != nil {
 		ib.err = err
@@ -76,7 +90,7 @@ func (ib *InsertBuilder) Returning(keys ...any) *InsertBuilder {
 	return ib
 }
 
-func (ib *InsertBuilder) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
+func (ib *insertBuilder) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
 	if ib.err != nil {
 		return "", nil, ib.err
 	}
@@ -162,47 +176,47 @@ func (ib *InsertBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	return buf.String(), args, nil
 }
 
-func (ib *InsertBuilder) LimitReturningOne() {
+func (ib *insertBuilder) LimitReturningOne() {
 	return
 }
 
-func (ib *InsertBuilder) With() string {
+func (ib *insertBuilder) With() string {
 	return ib.into.Alias()
 }
 
-func (ib *InsertBuilder) UsingTables() []string {
+func (ib *insertBuilder) UsingTables() []string {
 	return []string{ib.into.Alias()}
 }
 
-func (ib *InsertBuilder) GetReturning() []alias {
+func (ib *insertBuilder) GetReturning() []Alias {
 	return ib.returningKeys
 }
 
-func (ib *InsertBuilder) SetReturning(keys []any) error {
+func (ib *insertBuilder) SetReturning(keys []any) error {
 	return ib.setReturning(keys)
 }
 
-func (ib *InsertBuilder) SetReturningAliases(keys []alias) {
+func (ib *insertBuilder) SetReturningAliases(keys []Alias) {
 	ib.returningKeys = keys
 }
 
-func (ib *InsertBuilder) setReturning(keys []any) error {
+func (ib *insertBuilder) setReturning(keys []any) error {
 	ib.returningKeys = nil
 	for _, field := range keys {
 		switch val := field.(type) {
 		case string:
 			ib.returningKeys = append(ib.returningKeys, columnAlias(Column(val)))
-		case alias:
+		case Alias:
 			ib.returningKeys = append(ib.returningKeys, val)
 		default:
-			return fmt.Errorf("%w: %T. Must be a string or alias", ErrUnsupportedType, field)
+			return fmt.Errorf("%w: %T must be a string or Alias", ErrUnsupportedType, field)
 		}
 	}
 
 	return nil
 }
 
-func (ib *InsertBuilder) setInserting(inserting Inserting) {
+func (ib *insertBuilder) setInserting(inserting Inserting) {
 	ib.insertingKeys = nil
 	ib.insertingVals = nil
 
@@ -215,13 +229,13 @@ func (ib *InsertBuilder) setInserting(inserting Inserting) {
 	ib.insertingVals = append(ib.insertingVals, vals)
 }
 
-func (ib *InsertBuilder) setInto(into any) {
+func (ib *insertBuilder) setInto(into any) {
 	switch val := into.(type) {
 	case string:
 		ib.into = columnAlias(Column(val))
-	case alias:
+	case Alias:
 		ib.into = val
 	default:
-		ib.err = fmt.Errorf("%w: %T. Must be a string or alias", ErrUnsupportedType, into)
+		ib.err = fmt.Errorf("%w: %T must be a string or Alias", ErrUnsupportedType, into)
 	}
 }

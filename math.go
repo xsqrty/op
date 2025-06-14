@@ -10,23 +10,23 @@ type mathOperator struct {
 	args     []any
 }
 
-func Add(args ...any) *mathOperator {
+func Add(args ...any) driver.Sqler {
 	return &mathOperator{operator: '+', args: args}
 }
 
-func Sub(args ...any) *mathOperator {
+func Sub(args ...any) driver.Sqler {
 	return &mathOperator{operator: '-', args: args}
 }
 
-func Div(args ...any) *mathOperator {
+func Div(args ...any) driver.Sqler {
 	return &mathOperator{operator: '/', args: args}
 }
 
-func Mul(args ...any) *mathOperator {
+func Mul(args ...any) driver.Sqler {
 	return &mathOperator{operator: '*', args: args}
 }
 
-func (m mathOperator) Sql(options *driver.SqlOptions) (string, []any, error) {
+func (m *mathOperator) Sql(options *driver.SqlOptions) (string, []any, error) {
 	sql, args, err := joinList(m.operator, m.args, options)
 	return fmt.Sprintf("(%s)", sql), args, err
 }

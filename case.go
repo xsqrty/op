@@ -5,26 +5,32 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+type Cases interface {
+	ElseIf(condition driver.Sqler, then driver.Sqler) Cases
+	Else(elseCase driver.Sqler) driver.Sqler
+}
+
 type caseItem struct {
 	condition driver.Sqler
 	then      driver.Sqler
 }
 
 type cases []caseItem
+
 type caseWhen struct {
 	cases    cases
 	elseCase driver.Sqler
 }
 
-func If(condition driver.Sqler, then driver.Sqler) cases {
+func If(condition driver.Sqler, then driver.Sqler) Cases {
 	return cases{caseItem{condition, then}}
 }
 
-func (cs cases) ElseIf(condition driver.Sqler, then driver.Sqler) cases {
+func (cs cases) ElseIf(condition driver.Sqler, then driver.Sqler) Cases {
 	return append(cs, caseItem{condition: condition, then: then})
 }
 
-func (cs cases) Else(elseCase driver.Sqler) *caseWhen {
+func (cs cases) Else(elseCase driver.Sqler) driver.Sqler {
 	return &caseWhen{
 		cases:    cs,
 		elseCase: elseCase,

@@ -13,8 +13,8 @@ const opTag = "op"
 var (
 	ErrTargetNotPointer = errors.New("target must be a pointer to a struct")
 	ErrTargetIsNil      = errors.New("target must not be nil")
-	ErrAmbiguousField   = errors.New("field is ambiguous")
-	ErrFieldNotDescribe = errors.New("field is not described in the struct")
+	ErrAmbiguousField   = errors.New("target is ambiguous")
+	ErrFieldNotDescribe = errors.New("target is not described in the struct")
 )
 
 var modelsCache sync.Map
@@ -193,7 +193,7 @@ func getPointersByModelSetters(target any, setters map[string]modelSetters, keys
 			}
 		}
 
-		return nil, fmt.Errorf("field %s not found", key)
+		return nil, fmt.Errorf("target %s not found", key)
 	}
 
 	return result, nil
@@ -222,8 +222,7 @@ func prepareModelQuery[T any](q *query[T], target *T) (*modelDetails, []string, 
 		}
 	} else {
 		for i := 0; i < len(retAliases); i++ {
-			field := &retAliases[i]
-			aliasValue := field.Alias()
+			aliasValue := retAliases[i].Alias()
 
 			if _, ok := data.setters[aliasValue]; !ok {
 				aliases := findAliasFullName(q, data, aliasValue)
@@ -234,7 +233,7 @@ func prepareModelQuery[T any](q *query[T], target *T) (*modelDetails, []string, 
 				}
 
 				aliasValue = aliases[0]
-				setAliasColumn(field, Column(aliases[0]))
+				retAliases[i].Rename(aliases[0])
 			}
 
 			keys = append(keys, aliasValue)

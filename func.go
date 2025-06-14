@@ -17,15 +17,15 @@ type cast struct {
 }
 
 func Func(name string, args ...any) driver.Sqler {
-	return fun{name, "", args}
+	return &fun{name, "", args}
 }
 
 func FuncPrefix(name string, prefix string, args ...any) driver.Sqler {
-	return fun{name, prefix, args}
+	return &fun{name, prefix, args}
 }
 
 func Cast(arg any, typ string) driver.Sqler {
-	return cast{arg: arg, typ: typ}
+	return &cast{arg: arg, typ: typ}
 }
 
 func Any(arg driver.Sqler) driver.Sqler {
@@ -33,7 +33,7 @@ func Any(arg driver.Sqler) driver.Sqler {
 }
 
 func All(arg driver.Sqler) driver.Sqler {
-	return Func("All", arg)
+	return Func("ALL", arg)
 }
 
 func Concat(args ...any) driver.Sqler {

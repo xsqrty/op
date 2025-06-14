@@ -6,29 +6,41 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
-type DeleteBuilder struct {
-	table         alias
-	returningKeys []alias
+type DeleteBuilder interface {
+	Where(exp ...driver.Sqler) DeleteBuilder
+	Returning(keys ...any) DeleteBuilder
+	LimitReturningOne()
+	With() string
+	UsingTables() []string
+	GetReturning() []Alias
+	SetReturning(keys []any) error
+	SetReturningAliases(keys []Alias)
+	Sql(options *driver.SqlOptions) (string, []interface{}, error)
+}
+
+type deleteBuilder struct {
+	table         Alias
+	returningKeys []Alias
 	where         And
 	err           error
 }
 
-func Delete(table any) *DeleteBuilder {
-	db := &DeleteBuilder{}
+func Delete(table any) DeleteBuilder {
+	db := &deleteBuilder{}
 	switch val := table.(type) {
 	case string:
 		db.table = columnAlias(Column(val))
-	case alias:
+	case Alias:
 		db.table = val
 	default:
-		db.err = fmt.Errorf("%w: %T. Must be a string or alias", ErrUnsupportedType, table)
+		db.err = fmt.Errorf("%w: %T must be a string or Alias", ErrUnsupportedType, table)
 		return db
 	}
 
 	return db
 }
 
-func (db *DeleteBuilder) Where(exp ...driver.Sqler) *DeleteBuilder {
+func (db *deleteBuilder) Where(exp ...driver.Sqler) DeleteBuilder {
 	if len(exp) > 0 {
 		db.where = append(db.where, append(And{}, exp...))
 	}
@@ -36,7 +48,7 @@ func (db *DeleteBuilder) Where(exp ...driver.Sqler) *DeleteBuilder {
 	return db
 }
 
-func (db *DeleteBuilder) Returning(keys ...any) *DeleteBuilder {
+func (db *deleteBuilder) Returning(keys ...any) DeleteBuilder {
 	err := db.setReturning(keys)
 	if err != nil {
 		db.err = err
@@ -45,7 +57,7 @@ func (db *DeleteBuilder) Returning(keys ...any) *DeleteBuilder {
 	return db
 }
 
-func (db *DeleteBuilder) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
+func (db *deleteBuilder) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
 	if db.err != nil {
 		return "", nil, db.err
 	}
@@ -87,40 +99,40 @@ func (db *DeleteBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	return buf.String(), args, nil
 }
 
-func (db *DeleteBuilder) LimitReturningOne() {
+func (db *deleteBuilder) LimitReturningOne() {
 	return
 }
 
-func (db *DeleteBuilder) With() string {
+func (db *deleteBuilder) With() string {
 	return db.table.Alias()
 }
 
-func (db *DeleteBuilder) UsingTables() []string {
+func (db *deleteBuilder) UsingTables() []string {
 	return []string{db.table.Alias()}
 }
 
-func (db *DeleteBuilder) GetReturning() []alias {
+func (db *deleteBuilder) GetReturning() []Alias {
 	return db.returningKeys
 }
 
-func (db *DeleteBuilder) SetReturning(keys []any) error {
+func (db *deleteBuilder) SetReturning(keys []any) error {
 	return db.setReturning(keys)
 }
 
-func (db *DeleteBuilder) SetReturningAliases(keys []alias) {
+func (db *deleteBuilder) SetReturningAliases(keys []Alias) {
 	db.returningKeys = keys
 }
 
-func (db *DeleteBuilder) setReturning(keys []any) error {
+func (db *deleteBuilder) setReturning(keys []any) error {
 	db.returningKeys = nil
 	for _, field := range keys {
 		switch val := field.(type) {
 		case string:
 			db.returningKeys = append(db.returningKeys, columnAlias(Column(val)))
-		case alias:
+		case Alias:
 			db.returningKeys = append(db.returningKeys, val)
 		default:
-			return fmt.Errorf("%w: %T. Must be a string or alias", ErrUnsupportedType, field)
+			return fmt.Errorf("%w: %T must be a string or Alias", ErrUnsupportedType, field)
 		}
 	}
 

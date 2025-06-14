@@ -3,7 +3,7 @@ package op
 import "github.com/xsqrty/op/driver"
 
 type conflict struct {
-	target alias
+	target Alias
 	expr   driver.Sqler
 }
 
@@ -13,7 +13,7 @@ func DoNothing() driver.Sqler {
 	return Pure("NOTHING")
 }
 
-func DoUpdate(updates Updates) *UpdateBuilder {
+func DoUpdate(updates Updates) UpdateBuilder {
 	return Update(nil, updates)
 }
 

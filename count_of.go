@@ -5,63 +5,57 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
-const totalCountColumn = "total_count"
+type CountOfBuilder interface {
+	By(key string) CountOfBuilder
+	ByDistinct(key string) CountOfBuilder
+	Where(exp driver.Sqler) CountOfBuilder
+	With(ctx context.Context, db Queryable) (uint64, error)
+}
 
 type countOfResult struct {
 	Count uint64 `op:"total_count,aggregated"`
 }
 
 type countOf struct {
-	sb         *SelectBuilder
-	table      string
-	where      And
-	byColumn   *Column
+	sb         SelectBuilder
+	byColumn   Column
 	byDistinct bool
 }
 
-func CountOf(table string) *countOf {
+const totalCountColumn = "total_count"
+
+func CountOf(table string) CountOfBuilder {
 	return &countOf{
-		table: table,
-		sb:    &SelectBuilder{},
+		sb: Select().From(table),
 	}
 }
 
-func (co *countOf) By(key string) *countOf {
-	col := Column(key)
+func (co *countOf) By(key string) CountOfBuilder {
 	co.byDistinct = false
-	co.byColumn = &col
+	co.byColumn = Column(key)
 
 	return co
 }
 
-func (co *countOf) ByDistinct(key string) *countOf {
-	col := Column(key)
+func (co *countOf) ByDistinct(key string) CountOfBuilder {
 	co.byDistinct = true
-	co.byColumn = &col
+	co.byColumn = Column(key)
 
 	return co
 }
 
-func (co *countOf) Where(exp driver.Sqler) *countOf {
-	if exp != nil {
-		co.where = append(co.where, append(And{}, exp))
-	}
-
+func (co *countOf) Where(exp driver.Sqler) CountOfBuilder {
+	co.sb.Where(exp)
 	return co
 }
 
 func (co *countOf) With(ctx context.Context, db Queryable) (uint64, error) {
-	co.sb.From(co.table)
-	if len(co.where) > 0 {
-		co.sb.Where(co.where)
-	}
-
-	if co.byColumn != nil && co.byDistinct {
-		co.sb.SetReturningAliases([]alias{As(totalCountColumn, CountDistinct(co.byColumn))})
-	} else if co.byColumn != nil {
-		co.sb.SetReturningAliases([]alias{As(totalCountColumn, Count(co.byColumn))})
+	if !co.byColumn.IsZero() && co.byDistinct {
+		co.sb.SetReturningAliases([]Alias{As(totalCountColumn, CountDistinct(co.byColumn))})
+	} else if !co.byColumn.IsZero() {
+		co.sb.SetReturningAliases([]Alias{As(totalCountColumn, Count(co.byColumn))})
 	} else {
-		co.sb.SetReturningAliases([]alias{As(totalCountColumn, Count(Pure("*")))})
+		co.sb.SetReturningAliases([]Alias{As(totalCountColumn, Count(Pure("*")))})
 	}
 
 	result, err := Query[countOfResult](co.sb).GetOne(ctx, db)
