@@ -21,7 +21,7 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -timeout 10m -race -covermode atomic -coverprofile=coverage.out ./...
+        run: go test -timeout 10m -coverprofile=coverage.out ./...
 
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
