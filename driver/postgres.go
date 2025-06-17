@@ -5,12 +5,17 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"iter"
 )
 
+type PostgresQueryExec interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (commandTag pgconn.CommandTag, err error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
 type postgresDriver struct {
-	pool    *pgxpool.Pool
+	pool    PostgresQueryExec
 	options *SqlOptions
 }
 
@@ -23,7 +28,7 @@ type postgresExecResult struct {
 	commonTags *pgconn.CommandTag
 }
 
-func NewPostgresDriver(pool *pgxpool.Pool) QueryExec {
+func NewPostgresDriver(pool PostgresQueryExec) QueryExec {
 	return &postgresDriver{
 		pool:    pool,
 		options: NewPostgresSqlOptions(),

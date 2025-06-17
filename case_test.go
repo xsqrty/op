@@ -1,37 +1,43 @@
 package op
 
 import (
+	"github.com/xsqrty/op/driver"
+	"github.com/xsqrty/op/testutil"
 	"testing"
 )
 
 func TestIf(t *testing.T) {
-	runCases(t, []testCase{
+	testutil.RunCases(t, options, []testutil.TestCase{
 		{
-			builder: If(
-				Gte("age", 70), Value("old"),
+			Name: "create_case_when",
+			Builder: If(
+				Gte("age", 70), driver.Value("old"),
 			).
-				ElseIf(Gte("age", 30), Value("middle")).
-				Else(Value("other")),
-			expectedSql:  `CASE WHEN "age" >= ? THEN ? WHEN "age" >= ? THEN ? ELSE ? END`,
-			expectedArgs: []any{70, "old", 30, "middle", "other"},
+				ElseIf(Gte("age", 30), driver.Value("middle")).
+				Else(driver.Value("other")),
+			ExpectedSql:  `CASE WHEN "age" >= ? THEN ? WHEN "age" >= ? THEN ? ELSE ? END`,
+			ExpectedArgs: []any{70, "old", 30, "middle", "other"},
 		},
 		{
-			builder:      If(Gte("unsafe+name", 70), Value("old")).Else(Value("other")),
-			expectedSql:  "",
-			expectedArgs: []any(nil),
-			expectedErr:  `target "unsafe+name" contains illegal character '+'`,
+			Name:         "handle_case_when_cond_error",
+			Builder:      If(Gte("unsafe+name", 70), driver.Value("old")).Else(driver.Value("other")),
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  `target "unsafe+name" contains illegal character '+'`,
 		},
 		{
-			builder:      If(Gte("name", 70), Column("unsafe+name")).Else(Value("other")),
-			expectedSql:  "",
-			expectedArgs: []any(nil),
-			expectedErr:  `target "unsafe+name" contains illegal character '+'`,
+			Name:         "handle_case_when_then_error",
+			Builder:      If(Gte("name", 70), Column("unsafe+name")).Else(driver.Value("other")),
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  `target "unsafe+name" contains illegal character '+'`,
 		},
 		{
-			builder:      If(Gte("name", 70), Value(100)).Else(Column("unsafe+name")),
-			expectedSql:  "",
-			expectedArgs: []any(nil),
-			expectedErr:  `target "unsafe+name" contains illegal character '+'`,
+			Name:         "handle_case_when_else_error",
+			Builder:      If(Gte("name", 70), driver.Value(100)).Else(Column("unsafe+name")),
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  `target "unsafe+name" contains illegal character '+'`,
 		},
 	})
 }

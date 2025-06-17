@@ -8,15 +8,23 @@ import (
 type list []any
 
 func (l list) Sql(options *driver.SqlOptions) (string, []any, error) {
-	return joinList(options.FieldsDelim, l, options)
+	return joinList(options.FieldsDelim, l, false, options)
 }
 
-func joinList(joiner byte, list []any, options *driver.SqlOptions) (string, []any, error) {
+func joinList(joiner byte, list []any, strAsCol bool, options *driver.SqlOptions) (string, []any, error) {
 	var args []any
 	var buf bytes.Buffer
 
 	for i := range list {
-		if field, ok := list[i].(driver.Sqler); ok {
+		item := list[i]
+		if strAsCol {
+			if value, ok := item.(string); ok {
+				item = Column(value)
+			}
+		}
+
+		switch field := item.(type) {
+		case driver.Sqler:
 			sql, fieldArgs, err := field.Sql(options)
 			if err != nil {
 				return "", nil, err
@@ -24,7 +32,7 @@ func joinList(joiner byte, list []any, options *driver.SqlOptions) (string, []an
 
 			args = append(args, fieldArgs...)
 			buf.WriteString(sql)
-		} else {
+		default:
 			args = append(args, list[i])
 			buf.WriteByte(driver.Placeholder)
 		}

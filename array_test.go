@@ -1,65 +1,64 @@
 package op
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/xsqrty/op/testutil"
 	"testing"
 )
 
 func TestArraySql(t *testing.T) {
-	arrayArgs := []any{"a", 1, []byte{'1', '2', '3'}}
-	sql, args, err := Array(arrayArgs...).Sql(options)
-
-	assert.NoError(t, err)
-
-	expectedSql := `ARRAY[?,?,?]`
-	expectedArgs := []any{"a", 1, []byte{'1', '2', '3'}}
-
-	assert.Equal(t, expectedSql, sql)
-	assert.Equal(t, expectedArgs, args)
+	testutil.RunCases(t, options, []testutil.TestCase{
+		{
+			Name:         "create_postgres_array",
+			Builder:      Array([]any{"a", 1, []byte{'1', '2', '3'}}...),
+			ExpectedSql:  `ARRAY[?,?,?]`,
+			ExpectedArgs: []any{"a", 1, []byte{'1', '2', '3'}},
+		},
+	})
 }
 
 func TestArrayError(t *testing.T) {
-	arrayArgs := []any{Column("unsafe+name"), "a", 1, []byte{'1', '2', '3'}}
-	_, _, err := Array(arrayArgs...).Sql(options)
-
-	assert.EqualError(t, err, `target "unsafe+name" contains illegal character '+'`)
+	testutil.RunCases(t, options, []testutil.TestCase{
+		{
+			Name:         "handle_postgres_array_error",
+			Builder:      Array([]any{Column("unsafe+name"), "a", 1, []byte{'1', '2', '3'}}...),
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  `target "unsafe+name" contains illegal character '+'`,
+		},
+	})
 }
 
 func TestArrayLength(t *testing.T) {
-	arrayArgs := []any{"a", 1, []byte{'1', '2', '3'}}
-	sql, args, err := ArrayLength(Array(arrayArgs...)).Sql(options)
-
-	assert.NoError(t, err)
-
-	expectedSql := `ARRAY_LENGTH(ARRAY[?,?,?],?)`
-	expectedArgs := []any{"a", 1, []byte{'1', '2', '3'}, 1}
-
-	assert.Equal(t, expectedSql, sql)
-	assert.Equal(t, expectedArgs, args)
+	testutil.RunCases(t, options, []testutil.TestCase{
+		{
+			Name:         "array_length",
+			Builder:      ArrayLength(Array([]any{"a", 1, []byte{'1', '2', '3'}}...)),
+			ExpectedSql:  `ARRAY_LENGTH(ARRAY[?,?,?],?)`,
+			ExpectedArgs: []any{"a", 1, []byte{'1', '2', '3'}, 1},
+		},
+	})
 }
 
 func TestArrayConcat(t *testing.T) {
 	arrayArgs := []any{"a", 1, []byte{'1', '2', '3'}}
-	sql, args, err := ArrayConcat(Array(arrayArgs...), Array(arrayArgs...)).Sql(options)
-
-	assert.NoError(t, err)
-
-	expectedSql := `ARRAY_CAT(ARRAY[?,?,?],ARRAY[?,?,?])`
-	expectedArgs := []any{"a", 1, []byte{'1', '2', '3'}, "a", 1, []byte{'1', '2', '3'}}
-
-	assert.Equal(t, expectedSql, sql)
-	assert.Equal(t, expectedArgs, args)
+	testutil.RunCases(t, options, []testutil.TestCase{
+		{
+			Name:         "array_concat",
+			Builder:      ArrayConcat(Array(arrayArgs...), Array(arrayArgs...)),
+			ExpectedSql:  `ARRAY_CAT(ARRAY[?,?,?],ARRAY[?,?,?])`,
+			ExpectedArgs: []any{"a", 1, []byte{'1', '2', '3'}, "a", 1, []byte{'1', '2', '3'}},
+		},
+	})
 }
 
 func TestArrayUnnest(t *testing.T) {
 	arrayArgs := []any{"a", 1, []byte{'1', '2', '3'}}
-	sql, args, err := ArrayUnnest(Array(arrayArgs...)).Sql(options)
-
-	assert.NoError(t, err)
-
-	expectedSql := `UNNEST(ARRAY[?,?,?])`
-	expectedArgs := []any{"a", 1, []byte{'1', '2', '3'}}
-
-	assert.Equal(t, expectedSql, sql)
-	assert.Equal(t, expectedArgs, args)
+	testutil.RunCases(t, options, []testutil.TestCase{
+		{
+			Name:         "array_unnest",
+			Builder:      ArrayUnnest(Array(arrayArgs...)),
+			ExpectedSql:  `UNNEST(ARRAY[?,?,?])`,
+			ExpectedArgs: []any{"a", 1, []byte{'1', '2', '3'}},
+		},
+	})
 }

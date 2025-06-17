@@ -99,7 +99,7 @@ func (op *operator) Sql(options *driver.SqlOptions) (string, []any, error) {
 	}
 
 	if op.value == nil {
-		return Pure(fmt.Sprintf("%s %s", keySql, op.operator), argsKey...).Sql(options)
+		return driver.Pure(fmt.Sprintf("%s %s", keySql, op.operator), argsKey...).Sql(options)
 	}
 
 	valSql, argsVal, err := exprOrVal(op.value, options)
@@ -112,5 +112,5 @@ func (op *operator) Sql(options *driver.SqlOptions) (string, []any, error) {
 		format = "%s %s (%s)"
 	}
 
-	return Pure(fmt.Sprintf(format, keySql, op.operator, valSql), append(argsKey, argsVal...)...).Sql(options)
+	return driver.Pure(fmt.Sprintf(format, keySql, op.operator, valSql), append(argsKey, argsVal...)...).Sql(options)
 }

@@ -56,7 +56,7 @@ func (p *put[T]) With(ctx context.Context, db Queryable) error {
 
 	aliases := make([]Alias, len(fields))
 	for i := range fields {
-		aliases[i] = columnAlias(Column(fields[i]))
+		aliases[i] = ColumnAlias(Column(fields[i]))
 	}
 
 	if md.primaryAsTag == "" {

@@ -33,8 +33,8 @@ type SelectBuilder interface {
 
 type Order interface {
 	Target() any
-	OrderFormat() orderType
-	NullsFormat() nullsOrderType
+	OrderType() orderType
+	NullsType() nullsOrderType
 	Sql(options *driver.SqlOptions) (string, []any, error)
 }
 
@@ -43,9 +43,9 @@ type joinType int
 type nullsOrderType int
 
 type order struct {
-	target      any
-	orderFormat orderType
-	nullsFormat nullsOrderType
+	target    any
+	orderType orderType
+	nullsType nullsOrderType
 }
 
 type join struct {
@@ -57,6 +57,7 @@ type join struct {
 const (
 	orderDesc orderType = iota
 	orderAsc
+	orderNone
 )
 
 const (
@@ -110,7 +111,7 @@ func (sb *selectBuilder) FieldsPrefix(fieldsPrefix string) SelectBuilder {
 func (sb *selectBuilder) From(from any) SelectBuilder {
 	switch val := from.(type) {
 	case string:
-		al := columnAlias(Column(val))
+		al := ColumnAlias(Column(val))
 		sb.from = al
 		return sb
 	case Alias:
@@ -139,52 +140,27 @@ func (sb *selectBuilder) Having(exp driver.Sqler) SelectBuilder {
 }
 
 func (sb *selectBuilder) Join(table any, on ...driver.Sqler) SelectBuilder {
-	al, err := sb.parseJoinTable(table)
-	if err != nil {
-		sb.err = err
-	}
-
-	sb.joins = append(sb.joins, join{table: al, on: on, joinType: joinDefault})
+	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinDefault})
 	return sb
 }
 
 func (sb *selectBuilder) LeftJoin(table any, on ...driver.Sqler) SelectBuilder {
-	al, err := sb.parseJoinTable(table)
-	if err != nil {
-		sb.err = err
-	}
-
-	sb.joins = append(sb.joins, join{table: al, on: on, joinType: joinLeft})
+	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinLeft})
 	return sb
 }
 
 func (sb *selectBuilder) RightJoin(table any, on ...driver.Sqler) SelectBuilder {
-	al, err := sb.parseJoinTable(table)
-	if err != nil {
-		sb.err = err
-	}
-
-	sb.joins = append(sb.joins, join{table: al, on: on, joinType: joinRight})
+	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinRight})
 	return sb
 }
 
 func (sb *selectBuilder) InnerJoin(table any, on ...driver.Sqler) SelectBuilder {
-	al, err := sb.parseJoinTable(table)
-	if err != nil {
-		sb.err = err
-	}
-
-	sb.joins = append(sb.joins, join{table: al, on: on, joinType: joinInner})
+	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinInner})
 	return sb
 }
 
 func (sb *selectBuilder) CrossJoin(table any, on ...driver.Sqler) SelectBuilder {
-	al, err := sb.parseJoinTable(table)
-	if err != nil {
-		sb.err = err
-	}
-
-	sb.joins = append(sb.joins, join{table: al, on: on, joinType: joinCross})
+	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinCross})
 	return sb
 }
 
@@ -206,7 +182,7 @@ func (sb *selectBuilder) GroupBy(groups ...any) SelectBuilder {
 		case driver.Sqler:
 			sb.groupBy = append(sb.groupBy, g)
 		default:
-			sb.err = fmt.Errorf("%w: %T", ErrUnsupportedType, groups[i])
+			sb.err = fmt.Errorf("%w: %T must be a string or driver.Sqler", ErrUnsupportedType, groups[i])
 			return sb
 		}
 	}
@@ -326,7 +302,7 @@ func (sb *selectBuilder) Sql(options *driver.SqlOptions) (sql string, args []any
 	}
 
 	if sb.limit > 0 {
-		sql, limitArgs, err := Pure(" LIMIT ?", sb.limit).Sql(options)
+		sql, limitArgs, err := driver.Pure(" LIMIT ?", sb.limit).Sql(options)
 		if err != nil {
 			return "", nil, err
 		}
@@ -336,7 +312,7 @@ func (sb *selectBuilder) Sql(options *driver.SqlOptions) (sql string, args []any
 	}
 
 	if sb.offset > 0 {
-		sql, offsetArgs, err := Pure(" OFFSET ?", sb.offset).Sql(options)
+		sql, offsetArgs, err := driver.Pure(" OFFSET ?", sb.offset).Sql(options)
 		if err != nil {
 			return "", nil, err
 		}
@@ -385,7 +361,7 @@ func (sb *selectBuilder) setFields(fields []any) error {
 	for i := range fields {
 		switch val := fields[i].(type) {
 		case string:
-			sb.fields = append(sb.fields, columnAlias(Column(val)))
+			sb.fields = append(sb.fields, ColumnAlias(Column(val)))
 		case Alias:
 			sb.fields = append(sb.fields, val)
 		default:
@@ -396,62 +372,63 @@ func (sb *selectBuilder) setFields(fields []any) error {
 	return nil
 }
 
-func (sb *selectBuilder) parseJoinTable(table any) (Alias, error) {
+func (sb *selectBuilder) parseJoinTable(table any) Alias {
 	switch val := table.(type) {
 	case string:
-		return columnAlias(Column(val)), nil
+		return ColumnAlias(Column(val))
 	case Alias:
-		return val, nil
+		return val
 	default:
-		return nil, fmt.Errorf("%w: %T must be a string or Alias", ErrUnsupportedType, val)
+		sb.err = fmt.Errorf("%w: %T must be a string or Alias", ErrUnsupportedType, val)
+		return nil
 	}
 }
 
 func Desc(column any) Order {
 	return &order{
-		target:      column,
-		orderFormat: orderDesc,
-		nullsFormat: nullsNone,
+		target:    column,
+		orderType: orderDesc,
+		nullsType: nullsNone,
 	}
 }
 
 func DescNullsLast(column any) Order {
 	return &order{
-		target:      column,
-		orderFormat: orderDesc,
-		nullsFormat: nullsLast,
+		target:    column,
+		orderType: orderDesc,
+		nullsType: nullsLast,
 	}
 }
 
 func DescNullsFirst(column any) Order {
 	return &order{
-		target:      column,
-		orderFormat: orderDesc,
-		nullsFormat: nullsFirst,
+		target:    column,
+		orderType: orderDesc,
+		nullsType: nullsFirst,
 	}
 }
 
 func Asc(column any) Order {
 	return &order{
-		target:      column,
-		orderFormat: orderAsc,
-		nullsFormat: nullsNone,
+		target:    column,
+		orderType: orderAsc,
+		nullsType: nullsNone,
 	}
 }
 
 func AscNullsLast(column any) Order {
 	return &order{
-		target:      column,
-		orderFormat: orderAsc,
-		nullsFormat: nullsLast,
+		target:    column,
+		orderType: orderAsc,
+		nullsType: nullsLast,
 	}
 }
 
 func AscNullsFirst(column any) Order {
 	return &order{
-		target:      column,
-		orderFormat: orderAsc,
-		nullsFormat: nullsFirst,
+		target:    column,
+		orderType: orderAsc,
+		nullsType: nullsFirst,
 	}
 }
 
@@ -461,9 +438,12 @@ func (o *order) Sql(options *driver.SqlOptions) (string, []any, error) {
 		return "", nil, err
 	}
 
-	sql += " " + o.orderFormat.String()
-	if o.nullsFormat != nullsNone {
-		sql += " " + o.nullsFormat.String()
+	if o.orderType == orderAsc || o.orderType == orderDesc {
+		sql += " " + o.orderType.String()
+	}
+
+	if o.nullsType != nullsNone {
+		sql += " " + o.nullsType.String()
 	}
 
 	return sql, args, nil
@@ -473,12 +453,12 @@ func (o *order) Target() any {
 	return o.target
 }
 
-func (o *order) NullsFormat() nullsOrderType {
-	return o.nullsFormat
+func (o *order) NullsType() nullsOrderType {
+	return o.nullsType
 }
 
-func (o *order) OrderFormat() orderType {
-	return o.orderFormat
+func (o *order) OrderType() orderType {
+	return o.orderType
 }
 
 func (j nullsOrderType) String() string {

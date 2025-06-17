@@ -69,7 +69,7 @@ func (ib *insertBuilder) OnConflict(target any, do driver.Sqler) InsertBuilder {
 	conf := &conflict{expr: do}
 	switch val := target.(type) {
 	case string:
-		conf.target = columnAlias(Column(val))
+		conf.target = ColumnAlias(Column(val))
 	case Alias:
 		conf.target = val
 	default:
@@ -176,9 +176,7 @@ func (ib *insertBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	return buf.String(), args, nil
 }
 
-func (ib *insertBuilder) LimitReturningOne() {
-	return
-}
+func (ib *insertBuilder) LimitReturningOne() {}
 
 func (ib *insertBuilder) With() string {
 	return ib.into.Alias()
@@ -205,7 +203,7 @@ func (ib *insertBuilder) setReturning(keys []any) error {
 	for _, field := range keys {
 		switch val := field.(type) {
 		case string:
-			ib.returningKeys = append(ib.returningKeys, columnAlias(Column(val)))
+			ib.returningKeys = append(ib.returningKeys, ColumnAlias(Column(val)))
 		case Alias:
 			ib.returningKeys = append(ib.returningKeys, val)
 		default:
@@ -232,7 +230,7 @@ func (ib *insertBuilder) setInserting(inserting Inserting) {
 func (ib *insertBuilder) setInto(into any) {
 	switch val := into.(type) {
 	case string:
-		ib.into = columnAlias(Column(val))
+		ib.into = ColumnAlias(Column(val))
 	case Alias:
 		ib.into = val
 	default:

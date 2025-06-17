@@ -81,7 +81,7 @@ func Paginate[T any](table string, request *PaginateRequest, fieldsAllowed []str
 		request:       request,
 		rowsSb:        Select().From(table),
 		rowsSbWrap:    Select(),
-		countSbWrap:   Select(As(totalCountColumn, Count(Pure("*")))),
+		countSbWrap:   Select(As(totalCountColumn, Count(driver.Pure("*")))),
 		fieldsAllowed: fieldsAllowed,
 		maxLimit:      defaultMaxLimit,
 		minLimit:      defaultMinLimit,
@@ -126,6 +126,10 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 
 	var totalCount uint64
 	sql, args, err := db.Sql(pg.countSbWrap.From(As("result", pg.rowsSb)))
+	if err != nil {
+		return nil, err
+	}
+
 	err = db.QueryRow(ctx, sql, args...).Scan(&totalCount)
 	if err != nil {
 		return nil, err
@@ -279,6 +283,8 @@ func getFilterOperator(filter *Filter) (driver.Sqler, error) {
 	switch filter.Operator {
 	case "eq":
 		return Eq(filter.Key, filter.Value), nil
+	case "ne":
+		return Ne(filter.Key, filter.Value), nil
 	case "lt":
 		return Lt(filter.Key, filter.Value), nil
 	case "gt":

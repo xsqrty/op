@@ -34,7 +34,7 @@ func Update(table any, updates Updates) UpdateBuilder {
 	if table != nil {
 		switch val := table.(type) {
 		case string:
-			ub.table = columnAlias(Column(val))
+			ub.table = ColumnAlias(Column(val))
 		case Alias:
 			ub.table = val
 		default:
@@ -122,9 +122,7 @@ func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	return buf.String(), args, nil
 }
 
-func (ub *updateBuilder) LimitReturningOne() {
-	return
-}
+func (ub *updateBuilder) LimitReturningOne() {}
 
 func (ub *updateBuilder) With() string {
 	return ub.table.Alias()
@@ -151,7 +149,7 @@ func (ub *updateBuilder) setReturning(keys []any) error {
 	for i := range keys {
 		switch val := keys[i].(type) {
 		case string:
-			ub.returningKeys = append(ub.returningKeys, columnAlias(Column(val)))
+			ub.returningKeys = append(ub.returningKeys, ColumnAlias(Column(val)))
 		case Alias:
 			ub.returningKeys = append(ub.returningKeys, val)
 		default:
@@ -172,7 +170,7 @@ func (ub *updateBuilder) setUpdates(updates Updates) {
 		case driver.Sqler:
 			ub.updatesVals = append(ub.updatesVals, val)
 		default:
-			ub.updatesVals = append(ub.updatesVals, Pure(string(driver.Placeholder), val))
+			ub.updatesVals = append(ub.updatesVals, driver.Pure(string(driver.Placeholder), val))
 		}
 	}
 }

@@ -106,7 +106,7 @@ func (c cast) Sql(options *driver.SqlOptions) (string, []any, error) {
 	case driver.Sqler:
 		sqler = v
 	default:
-		sqler = Value(v)
+		sqler = driver.Value(v)
 	}
 
 	sql, args, err := sqler.Sql(options)

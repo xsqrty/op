@@ -27,6 +27,10 @@ func As(name string, expr driver.Sqler) Alias {
 	return &alias{name: name, pure: false, expr: expr}
 }
 
+func ColumnAlias(col Column) Alias {
+	return &alias{pure: true, expr: col, name: string(col)}
+}
+
 func (c Column) Sql(options *driver.SqlOptions) (string, []any, error) {
 	var buf bytes.Buffer
 	val := []byte(c)
@@ -127,10 +131,6 @@ func wrapAlias(al *alias, options *driver.SqlOptions) (string, []any, error) {
 	}
 
 	return buf.String(), nil, nil
-}
-
-func columnAlias(col Column) Alias {
-	return &alias{pure: true, expr: col, name: string(col)}
 }
 
 func isAllowedColumnByte(b byte) bool {

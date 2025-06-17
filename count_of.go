@@ -9,11 +9,11 @@ type CountOfBuilder interface {
 	By(key string) CountOfBuilder
 	ByDistinct(key string) CountOfBuilder
 	Where(exp driver.Sqler) CountOfBuilder
-	With(ctx context.Context, db Queryable) (uint64, error)
+	With(ctx context.Context, db Queryable) (int64, error)
 }
 
 type countOfResult struct {
-	Count uint64 `op:"total_count,aggregated"`
+	Count int64 `op:"total_count,aggregated"`
 }
 
 type countOf struct {
@@ -49,13 +49,13 @@ func (co *countOf) Where(exp driver.Sqler) CountOfBuilder {
 	return co
 }
 
-func (co *countOf) With(ctx context.Context, db Queryable) (uint64, error) {
+func (co *countOf) With(ctx context.Context, db Queryable) (int64, error) {
 	if !co.byColumn.IsZero() && co.byDistinct {
 		co.sb.SetReturningAliases([]Alias{As(totalCountColumn, CountDistinct(co.byColumn))})
 	} else if !co.byColumn.IsZero() {
 		co.sb.SetReturningAliases([]Alias{As(totalCountColumn, Count(co.byColumn))})
 	} else {
-		co.sb.SetReturningAliases([]Alias{As(totalCountColumn, Count(Pure("*")))})
+		co.sb.SetReturningAliases([]Alias{As(totalCountColumn, Count(driver.Pure("*")))})
 	}
 
 	result, err := Query[countOfResult](co.sb).GetOne(ctx, db)

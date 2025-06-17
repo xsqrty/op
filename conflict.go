@@ -10,7 +10,7 @@ type conflict struct {
 type Excluded Column
 
 func DoNothing() driver.Sqler {
-	return Pure("NOTHING")
+	return driver.Pure("NOTHING")
 }
 
 func DoUpdate(updates Updates) UpdateBuilder {

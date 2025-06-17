@@ -7,7 +7,7 @@ import (
 )
 
 type DeleteBuilder interface {
-	Where(exp ...driver.Sqler) DeleteBuilder
+	Where(exp driver.Sqler) DeleteBuilder
 	Returning(keys ...any) DeleteBuilder
 	LimitReturningOne()
 	With() string
@@ -29,7 +29,7 @@ func Delete(table any) DeleteBuilder {
 	db := &deleteBuilder{}
 	switch val := table.(type) {
 	case string:
-		db.table = columnAlias(Column(val))
+		db.table = ColumnAlias(Column(val))
 	case Alias:
 		db.table = val
 	default:
@@ -40,9 +40,9 @@ func Delete(table any) DeleteBuilder {
 	return db
 }
 
-func (db *deleteBuilder) Where(exp ...driver.Sqler) DeleteBuilder {
-	if len(exp) > 0 {
-		db.where = append(db.where, append(And{}, exp...))
+func (db *deleteBuilder) Where(exp driver.Sqler) DeleteBuilder {
+	if exp != nil {
+		db.where = append(db.where, exp)
 	}
 
 	return db
@@ -99,9 +99,7 @@ func (db *deleteBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	return buf.String(), args, nil
 }
 
-func (db *deleteBuilder) LimitReturningOne() {
-	return
-}
+func (db *deleteBuilder) LimitReturningOne() {}
 
 func (db *deleteBuilder) With() string {
 	return db.table.Alias()
@@ -128,7 +126,7 @@ func (db *deleteBuilder) setReturning(keys []any) error {
 	for _, field := range keys {
 		switch val := field.(type) {
 		case string:
-			db.returningKeys = append(db.returningKeys, columnAlias(Column(val)))
+			db.returningKeys = append(db.returningKeys, ColumnAlias(Column(val)))
 		case Alias:
 			db.returningKeys = append(db.returningKeys, val)
 		default:

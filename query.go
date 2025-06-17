@@ -89,10 +89,10 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 	}
 
 	rows, err := db.Query(ctx, sql, args...)
-	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for _, row := range rows.Rows() {
 		item := new(T)

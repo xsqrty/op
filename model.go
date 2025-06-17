@@ -112,9 +112,9 @@ func forEachModel(table string, val reflect.Value, path []int, result *modelDeta
 		}
 
 		tag := tags[0]
-		isPrimary := path == nil && strings.Index(tagValue, ",primary") != -1
-		isAggregated := strings.Index(tagValue, ",aggregated") != -1
-		isNested := strings.Index(tagValue, ",nested") != -1
+		isPrimary := path == nil && strings.Contains(tagValue, ",primary")
+		isAggregated := strings.Contains(tagValue, ",aggregated")
+		isNested := strings.Contains(tagValue, ",nested")
 
 		if fieldVal.Kind() == reflect.Ptr {
 			if fieldVal.IsNil() {
@@ -233,7 +233,9 @@ func prepareModelQuery[T any](q *query[T], target *T) (*modelDetails, []string, 
 				}
 
 				aliasValue = aliases[0]
-				retAliases[i].Rename(aliases[0])
+				if retAliases[i].IsPure() {
+					retAliases[i].Rename(aliases[0])
+				}
 			}
 
 			keys = append(keys, aliasValue)

@@ -2,80 +2,95 @@ package op
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/xsqrty/op/testutil"
 	"testing"
 )
 
 func TestColumn(t *testing.T) {
-	runCases(t, []testCase{
+	testutil.RunCases(t, options, []testutil.TestCase{
 		{
-			builder:      Column("name"),
-			expectedSql:  `"name"`,
-			expectedArgs: []any(nil),
+			Name:         "column",
+			Builder:      Column("name"),
+			ExpectedSql:  `"name"`,
+			ExpectedArgs: []any(nil),
 		},
 		{
-			builder:      Column("table.target"),
-			expectedSql:  `"table"."target"`,
-			expectedArgs: []any(nil),
+			Name:         "composite_column",
+			Builder:      Column("table.target"),
+			ExpectedSql:  `"table"."target"`,
+			ExpectedArgs: []any(nil),
 		},
 		{
-			builder:      Column("name*123"),
-			expectedSql:  "",
-			expectedArgs: []any(nil),
-			expectedErr:  `target "name*123" contains illegal character '*'`,
+			Name:         "column_error",
+			Builder:      Column("name*123"),
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  `target "name*123" contains illegal character '*'`,
 		},
 	})
+
+	assert.True(t, Column("").IsZero())
+	assert.True(t, ColumnAlias("col").IsPure())
 }
 
 func TestAlias(t *testing.T) {
-	al := columnAlias("target")
+	al := ColumnAlias("target")
 	al.Rename("table.target")
 
-	runCases(t, []testCase{
+	al2 := As("name", Column("target"))
+	al2.Rename("newName")
+
+	testutil.RunCases(t, options, []testutil.TestCase{
 		{
-			builder:      As("UserName", Column("Name")),
-			expectedSql:  `("Name") AS "UserName"`,
-			expectedArgs: []any(nil),
+			Name:         "alias",
+			Builder:      As("UserName", Column("Name")),
+			ExpectedSql:  `("Name") AS "UserName"`,
+			ExpectedArgs: []any(nil),
 		},
 		{
-			builder:      As("SubQuery", Select("Id", "Name").From("Users").Where(Eq("Id", 1))),
-			expectedSql:  `(SELECT "Id","Name" FROM "Users" WHERE "Id" = ?) AS "SubQuery"`,
-			expectedArgs: []any{1},
+			Name:         "alias_with_subquery",
+			Builder:      As("SubQuery", Select("Id", "Name").From("Users").Where(Eq("Id", 1))),
+			ExpectedSql:  `(SELECT "Id","Name" FROM "Users" WHERE "Id" = ?) AS "SubQuery"`,
+			ExpectedArgs: []any{1},
 		},
 		{
-			builder:      columnAlias("Users.Name"),
-			expectedSql:  `"Users"."Name"`,
-			expectedArgs: []any(nil),
+			Name:         "alias_for_column",
+			Builder:      ColumnAlias("Users.Name"),
+			ExpectedSql:  `"Users"."Name"`,
+			ExpectedArgs: []any(nil),
 		},
 		{
-			builder:      As("unsafe+name", Column("Col")),
-			expectedSql:  "",
-			expectedArgs: []any(nil),
-			expectedErr:  `name "unsafe+name" contains illegal character '+'`,
+			Name:         "alias_error",
+			Builder:      As("unsafe+name", Column("Col")),
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  `name "unsafe+name" contains illegal character '+'`,
 		},
 		{
-			builder:      al,
-			expectedSql:  `"table"."target"`,
-			expectedArgs: []any(nil),
+			Name:         "alias_col_rename",
+			Builder:      al,
+			ExpectedSql:  `"table"."target"`,
+			ExpectedArgs: []any(nil),
 		},
 		{
-			builder:      As("Name", Select(10).From("Users")),
-			expectedSql:  "",
-			expectedArgs: []any(nil),
-			expectedErr:  `unknown type: int must be a string or Alias`,
+			Name:         "alias_expr_rename",
+			Builder:      al2,
+			ExpectedSql:  `("target") AS "newName"`,
+			ExpectedArgs: []any(nil),
 		},
 		{
-			builder:      &alias{pure: true},
-			expectedSql:  "",
-			expectedArgs: []any(nil),
-			expectedErr:  `no target found in name`,
+			Name:         "alias_unknown_type",
+			Builder:      As("Name", Select(10).From("Users")),
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  `unknown type: int must be a string or Alias`,
+		},
+		{
+			Name:         "alias_no_target",
+			Builder:      &alias{pure: true},
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  `no target found in name`,
 		},
 	})
-}
-
-func TestColumnAlias(t *testing.T) {
-	al := columnAlias("Users.Name").Alias()
-	assert.Equal(t, "Users.Name", al)
-
-	al = As("Rename", Column("name")).Alias()
-	assert.Equal(t, "Rename", al)
 }

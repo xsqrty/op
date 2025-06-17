@@ -27,6 +27,6 @@ func Mul(args ...any) driver.Sqler {
 }
 
 func (m *mathOperator) Sql(options *driver.SqlOptions) (string, []any, error) {
-	sql, args, err := joinList(m.operator, m.args, options)
+	sql, args, err := joinList(m.operator, m.args, true, options)
 	return fmt.Sprintf("(%s)", sql), args, err
 }

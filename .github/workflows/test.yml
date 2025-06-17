@@ -1,0 +1,30 @@
+name: Test
+on:
+  pull_request:
+    branches: [ 'main' ]
+  push:
+    branches: [ 'main' ]
+jobs:
+  test:
+    name: Run tests, upload coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -timeout 10m -race -covermode atomic -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-yo-lcov: coverage.out
