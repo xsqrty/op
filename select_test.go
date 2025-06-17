@@ -101,13 +101,13 @@ func TestSelect(t *testing.T) {
 			Name:         "limit",
 			Builder:      Select("id", "name").From("users").Limit(10),
 			ExpectedSql:  `SELECT "id","name" FROM "users" LIMIT ?`,
-			ExpectedArgs: []any{uint64(10)},
+			ExpectedArgs: []any{int64(10)},
 		},
 		{
 			Name:         "offset",
 			Builder:      Select("id", "name").From("users").Offset(10),
 			ExpectedSql:  `SELECT "id","name" FROM "users" OFFSET ?`,
-			ExpectedArgs: []any{uint64(10)},
+			ExpectedArgs: []any{int64(10)},
 		},
 		{
 			Name:         "distinct",

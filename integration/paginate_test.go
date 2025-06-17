@@ -50,8 +50,17 @@ func TestPaginate(t *testing.T) {
 		).
 		With(ctx, qe)
 
+	deletedCount := 0
+	for _, user := range mockUsers {
+		if user.DeletedAt.Valid {
+			deletedCount++
+		}
+	}
+
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
+	assert.Equal(t, int64(deletedCount), res.TotalRows)
+
 	startId := mockUsers[0].ID
 	users := make([]*User, len(mockUsers))
 	copy(users, mockUsers)

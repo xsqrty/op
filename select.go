@@ -18,8 +18,8 @@ type SelectBuilder interface {
 	RightJoin(table any, on ...driver.Sqler) SelectBuilder
 	InnerJoin(table any, on ...driver.Sqler) SelectBuilder
 	CrossJoin(table any, on ...driver.Sqler) SelectBuilder
-	Limit(limit uint64) SelectBuilder
-	Offset(offset uint64) SelectBuilder
+	Limit(limit int64) SelectBuilder
+	Offset(offset int64) SelectBuilder
 	GroupBy(groups ...any) SelectBuilder
 	OrderBy(orders ...Order) SelectBuilder
 	LimitReturningOne()
@@ -84,8 +84,8 @@ type selectBuilder struct {
 	orders       []Order
 	groupBy      []driver.Sqler
 	err          error
-	limit        uint64
-	offset       uint64
+	limit        int64
+	offset       int64
 }
 
 func Select(fields ...any) SelectBuilder {
@@ -164,12 +164,12 @@ func (sb *selectBuilder) CrossJoin(table any, on ...driver.Sqler) SelectBuilder 
 	return sb
 }
 
-func (sb *selectBuilder) Limit(limit uint64) SelectBuilder {
+func (sb *selectBuilder) Limit(limit int64) SelectBuilder {
 	sb.limit = limit
 	return sb
 }
 
-func (sb *selectBuilder) Offset(offset uint64) SelectBuilder {
+func (sb *selectBuilder) Offset(offset int64) SelectBuilder {
 	sb.offset = offset
 	return sb
 }

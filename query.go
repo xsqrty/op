@@ -8,8 +8,6 @@ import (
 type QueryBuilder[T any] interface {
 	GetOne(ctx context.Context, db Queryable) (*T, error)
 	GetMany(ctx context.Context, db Queryable) ([]*T, error)
-	Wrap(name string, sb SelectBuilder) QueryBuilder[T]
-	MapAliases(aliasMapper func(Alias)) QueryBuilder[T]
 }
 
 type Returnable interface {
@@ -62,7 +60,7 @@ func (q *query[T]) GetOne(ctx context.Context, db Queryable) (*T, error) {
 	}
 
 	q.ret.LimitReturningOne()
-	sql, args, err := db.Sql(q.getQuery())
+	sql, args, err := db.Sql(q.ret)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +81,7 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 		return nil, err
 	}
 
-	sql, args, err := db.Sql(q.getQuery())
+	sql, args, err := db.Sql(q.ret)
 	if err != nil {
 		return nil, err
 	}
@@ -119,34 +117,4 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 	}
 
 	return result, nil
-}
-
-func (q *query[T]) Wrap(name string, sb SelectBuilder) QueryBuilder[T] {
-	q.wrap = &wrapper{
-		name: name,
-		sb:   sb,
-	}
-
-	return q
-}
-
-func (q *query[T]) MapAliases(aliasMapper func(Alias)) QueryBuilder[T] {
-	q.aliasMapper = aliasMapper
-	return q
-}
-
-func (q *query[T]) getQuery() driver.Sqler {
-	var query driver.Sqler = q.ret
-	if q.wrap != nil {
-		query = q.wrap.sb.From(As(q.wrap.name, q.ret))
-	}
-
-	if q.aliasMapper != nil {
-		aliases := q.ret.GetReturning()
-		for i := 0; i < len(aliases); i++ {
-			q.aliasMapper(aliases[i])
-		}
-	}
-
-	return query
 }

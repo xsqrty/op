@@ -1,7 +1,6 @@
 package op
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -12,12 +11,11 @@ import (
 type Paginator[T any] interface {
 	With(ctx context.Context, db Queryable) (*PaginateResult[T], error)
 	Fields(fields ...any) Paginator[T]
-	MaxFilterDepth(depth uint) Paginator[T]
-	MaxLimit(limit uint64) Paginator[T]
-	MinLimit(limit uint64) Paginator[T]
+	MaxFilterDepth(depth int64) Paginator[T]
+	MaxLimit(limit int64) Paginator[T]
+	MinLimit(limit int64) Paginator[T]
 	Having(exp driver.Sqler) Paginator[T]
-	BaseWhere(exp driver.Sqler) Paginator[T]
-	PostWhere(exp driver.Sqler) Paginator[T]
+	Where(exp driver.Sqler) Paginator[T]
 	Join(table any, on ...driver.Sqler) Paginator[T]
 	LeftJoin(table any, on ...driver.Sqler) Paginator[T]
 	RightJoin(table any, on ...driver.Sqler) Paginator[T]
@@ -27,15 +25,15 @@ type Paginator[T any] interface {
 }
 
 type PaginateResult[T any] struct {
-	TotalRows uint64
+	TotalRows int64
 	Rows      []*T
 }
 
 type PaginateRequest struct {
 	Orders  []PaginateOrder `json:"orders,omitempty"`
 	Filters *FilterGroup    `json:"filters,omitempty"`
-	Limit   uint64          `json:"limit,omitempty"`
-	Offset  uint64          `json:"offset,omitempty"`
+	Limit   int64           `json:"limit,omitempty"`
+	Offset  int64           `json:"offset,omitempty"`
 }
 
 type FilterGroup struct {
@@ -59,11 +57,11 @@ type paginate[T any] struct {
 	fieldsAllowed []string
 	request       *PaginateRequest
 	rowsSb        SelectBuilder
-	rowsSbWrap    SelectBuilder
+	countSb       SelectBuilder
 	countSbWrap   SelectBuilder
-	minLimit      uint64
-	maxLimit      uint64
-	maxDepth      uint
+	minLimit      int64
+	maxLimit      int64
+	maxDepth      int64
 }
 
 var (
@@ -72,7 +70,7 @@ var (
 
 const (
 	defaultMinLimit    = 1
-	defaultMaxLimit    = math.MaxUint32
+	defaultMaxLimit    = math.MaxInt64
 	defaultFilterDepth = 5
 )
 
@@ -80,7 +78,7 @@ func Paginate[T any](table string, request *PaginateRequest, fieldsAllowed []str
 	return &paginate[T]{
 		request:       request,
 		rowsSb:        Select().From(table),
-		rowsSbWrap:    Select(),
+		countSb:       Select().From(table),
 		countSbWrap:   Select(As(totalCountColumn, Count(driver.Pure("*")))),
 		fieldsAllowed: fieldsAllowed,
 		maxLimit:      defaultMaxLimit,
@@ -109,23 +107,20 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 		return nil, err
 	}
 
-	pg.countSbWrap.Where(where)
-	pg.rowsSbWrap.Where(where)
-	pg.rowsSbWrap.OrderBy(orders...)
-	pg.rowsSbWrap.Limit(limit)
-	pg.rowsSbWrap.Offset(offset)
+	pg.rowsSb.Where(where)
+	pg.countSb.Where(where)
 
-	rows, err := Query[T](pg.rowsSb).Wrap("result", pg.rowsSbWrap).MapAliases(func(al Alias) {
-		if al.IsPure() {
-			al.Rename(renameAlias(al.Alias()))
-		}
-	}).GetMany(ctx, db)
+	pg.rowsSb.OrderBy(orders...)
+	pg.rowsSb.Limit(limit)
+	pg.rowsSb.Offset(offset)
+
+	rows, err := Query[T](pg.rowsSb).GetMany(ctx, db)
 	if err != nil {
 		return nil, err
 	}
 
-	var totalCount uint64
-	sql, args, err := db.Sql(pg.countSbWrap.From(As("result", pg.rowsSb)))
+	var totalCount int64
+	sql, args, err := db.Sql(pg.countSbWrap.From(As("result", pg.countSb)))
 	if err != nil {
 		return nil, err
 	}
@@ -143,71 +138,83 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 
 func (pg *paginate[T]) Fields(fields ...any) Paginator[T] {
 	pg.rowsSb.SetReturning(fields)
+	pg.countSb.SetReturning(fields)
+
 	return pg
 }
 
-func (pg *paginate[T]) MaxFilterDepth(depth uint) Paginator[T] {
+func (pg *paginate[T]) MaxFilterDepth(depth int64) Paginator[T] {
 	pg.maxDepth = depth
 	return pg
 }
 
-func (pg *paginate[T]) MaxLimit(limit uint64) Paginator[T] {
+func (pg *paginate[T]) MaxLimit(limit int64) Paginator[T] {
 	pg.maxLimit = limit
 	return pg
 }
 
-func (pg *paginate[T]) MinLimit(limit uint64) Paginator[T] {
+func (pg *paginate[T]) MinLimit(limit int64) Paginator[T] {
 	pg.minLimit = limit
 	return pg
 }
 
 func (pg *paginate[T]) Having(exp driver.Sqler) Paginator[T] {
 	pg.rowsSb.Having(exp)
+	pg.countSb.Having(exp)
+
 	return pg
 }
 
-func (pg *paginate[T]) BaseWhere(exp driver.Sqler) Paginator[T] {
+func (pg *paginate[T]) Where(exp driver.Sqler) Paginator[T] {
 	pg.rowsSb.Where(exp)
-	return pg
-}
+	pg.countSb.Where(exp)
 
-func (pg *paginate[T]) PostWhere(exp driver.Sqler) Paginator[T] {
-	pg.rowsSbWrap.Where(exp)
-	pg.countSbWrap.Where(exp)
 	return pg
 }
 
 func (pg *paginate[T]) Join(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.Join(table, on...)
+	pg.countSb.Join(table, on...)
+
 	return pg
 }
 
 func (pg *paginate[T]) LeftJoin(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.LeftJoin(table, on...)
+	pg.countSb.LeftJoin(table, on...)
+
 	return pg
 }
 
 func (pg *paginate[T]) RightJoin(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.RightJoin(table, on...)
+	pg.countSb.RightJoin(table, on...)
+
 	return pg
 }
 
 func (pg *paginate[T]) InnerJoin(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.InnerJoin(table, on...)
+	pg.countSb.InnerJoin(table, on...)
+
 	return pg
 }
 
 func (pg *paginate[T]) CrossJoin(table any, on ...driver.Sqler) Paginator[T] {
 	pg.rowsSb.CrossJoin(table, on...)
+	pg.countSb.CrossJoin(table, on...)
+
 	return pg
 }
 
 func (pg *paginate[T]) GroupBy(groups ...any) Paginator[T] {
 	pg.rowsSb.GroupBy(groups...)
+	pg.countSb.GroupBy(groups...)
+	
 	return pg
 }
 
-func (pg *paginate[T]) parseFilters(filters *FilterGroup, depth uint) (driver.Sqler, error) {
+func (pg *paginate[T]) parseFilters(filters *FilterGroup, depth int64) (driver.Sqler, error) {
 	if filters == nil {
 		return nil, nil
 	}
@@ -308,19 +315,4 @@ func getFilterOperator(filter *Filter) (driver.Sqler, error) {
 	}
 
 	return nil, fmt.Errorf("invalid filter operator: %s", filter.Operator)
-}
-
-func renameAlias(alias string) string {
-	var buf bytes.Buffer
-	for i := 0; i < len(alias); i++ {
-		r := alias[i]
-
-		if r == delimByte {
-			buf.WriteByte('_')
-		} else {
-			buf.WriteByte(r)
-		}
-	}
-
-	return buf.String()
 }
