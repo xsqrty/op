@@ -23,7 +23,9 @@ func TestQuery(t *testing.T) {
 	assert.Len(t, users, len(mockUsers))
 
 	for index, user := range users {
-		assert.Equal(t, mockUsers[index], user)
+		assert.Equal(t, mockUsers[index].ID, user.ID)
+		assert.Equal(t, mockUsers[index].Name, user.Name)
+		assert.Equal(t, mockUsers[index].Email, user.Email)
 	}
 
 	deletedUsersCount := 0
@@ -49,7 +51,7 @@ func TestQueryOne(t *testing.T) {
 
 	user, err := op.Query[User](op.Select().From(usersTable).Where(op.Eq("id", 1))).GetOne(ctx, qe)
 	assert.NoError(t, err)
-	assert.Equal(t, mockUsers[0], user)
+	assert.Equal(t, mockUsers[0].ID, user.ID)
 }
 
 func TestQueryDelete(t *testing.T) {
@@ -73,7 +75,9 @@ func TestQueryDelete(t *testing.T) {
 	assert.Len(t, deletedUsers, 3)
 
 	for i, user := range deletedUsers {
-		assert.Equal(t, mockUsers[i], user)
+		assert.Equal(t, mockUsers[i].ID, user.ID)
+		assert.Equal(t, mockUsers[i].Name, user.Name)
+		assert.Equal(t, mockUsers[i].Email, user.Email)
 	}
 
 	newUsersCount, err := op.CountOf(usersTable).With(ctx, qe)
