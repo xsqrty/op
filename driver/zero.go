@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"bytes"
 	"database/sql/driver"
 	"fmt"
 	"time"
@@ -13,10 +14,38 @@ type ZeroInt64 int64
 type ZeroTime time.Time
 type ZeroBool bool
 
+var (
+	timeNull  = []byte("null")
+	timeEmpty = []byte(`""`)
+	timeZero  = []byte("0")
+)
+
 // IsZero reports whether t represents zero time,
 // this is a wrapper around the method `time.Time.IsZero()`
 func (zt ZeroTime) IsZero() bool {
 	return time.Time(zt).IsZero()
+}
+
+// MarshalJSON implements the [encoding/json.Marshaler] interface.
+func (zt ZeroTime) MarshalJSON() ([]byte, error) {
+	return time.Time(zt).MarshalJSON()
+}
+
+// UnmarshalJSON implements the [encoding/json.Unmarshaler] interface.
+func (zt *ZeroTime) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 || bytes.Equal(data, timeNull) || bytes.Equal(data, timeEmpty) || bytes.Equal(data, timeZero) {
+		*zt = ZeroTime(time.Time{})
+		return nil
+	}
+
+	t := time.Time(*zt)
+	err := (&t).UnmarshalJSON(data)
+	if err != nil {
+		return err
+	}
+
+	*zt = ZeroTime(t)
+	return nil
 }
 
 // String returns the time formatted using the format string
