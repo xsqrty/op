@@ -65,7 +65,6 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteUsingTables(t *testing.T) {
-	t.Parallel()
 	item := Delete("users")
 	tables := item.UsingTables()
 
@@ -74,7 +73,6 @@ func TestDeleteUsingTables(t *testing.T) {
 }
 
 func TestDeleteReturning(t *testing.T) {
-	t.Parallel()
 	item := Delete("users").Returning("id")
 	item.LimitReturningOne()
 

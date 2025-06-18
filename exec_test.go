@@ -9,7 +9,6 @@ import (
 )
 
 func TestExec(t *testing.T) {
-	t.Parallel()
 	executor := testutil.NewMockExecutor()
 	executor.On(
 		"Exec",
@@ -28,7 +27,6 @@ func TestExec(t *testing.T) {
 }
 
 func TestExecError(t *testing.T) {
-	t.Parallel()
 	res, err := Exec(Delete("a+b")).With(context.Background(), testutil.NewMockExecutor())
 
 	assert.Nil(t, res)

@@ -6,7 +6,6 @@ import (
 )
 
 func TestPure(t *testing.T) {
-	t.Parallel()
 	sql, args, err := Pure("col > ? AND col < ?", 100, 200).Sql(NewPostgresSqlOptions())
 	assert.NoError(t, err)
 
@@ -15,7 +14,6 @@ func TestPure(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	t.Parallel()
 	sql, args, err := Value([]byte{'n', 'a', 'm', 'e'}).Sql(NewPostgresSqlOptions())
 	assert.NoError(t, err)
 

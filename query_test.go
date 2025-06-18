@@ -16,7 +16,6 @@ type User struct {
 }
 
 func TestGetMany(t *testing.T) {
-	t.Parallel()
 	query := testutil.NewMockQueryable()
 	query.
 		On("Query", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" WHERE "users"."id" = ?`, []any{1}).
@@ -37,7 +36,6 @@ func TestGetMany(t *testing.T) {
 }
 
 func TestGetOne(t *testing.T) {
-	t.Parallel()
 	query := testutil.NewMockQueryable()
 	query.
 		On("QueryRow", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" WHERE "users"."id" = ? LIMIT ?`, []any{100, int64(1)}).
@@ -51,7 +49,6 @@ func TestGetOne(t *testing.T) {
 }
 
 func TestGetOneError(t *testing.T) {
-	t.Parallel()
 	query := testutil.NewMockQueryable()
 	query.
 		On("QueryRow", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" LIMIT ?`, []any{int64(1)}).
@@ -63,7 +60,6 @@ func TestGetOneError(t *testing.T) {
 }
 
 func TestGetOneSqlError(t *testing.T) {
-	t.Parallel()
 	query := testutil.NewMockQueryable()
 	user, err := Query[User](Select().From("users").Where(Eq("a+b", 1))).GetOne(context.Background(), query)
 	assert.Nil(t, user)
@@ -71,7 +67,6 @@ func TestGetOneSqlError(t *testing.T) {
 }
 
 func TestGetOneModelError(t *testing.T) {
-	t.Parallel()
 	query := testutil.NewMockQueryable()
 	user, err := Query[User](Select("undefined").From("users")).GetOne(context.Background(), query)
 	assert.Nil(t, user)

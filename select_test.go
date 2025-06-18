@@ -215,7 +215,6 @@ func TestSelect(t *testing.T) {
 }
 
 func TestSelectUsingTables(t *testing.T) {
-	t.Parallel()
 	item := Select().From("users").Join("roles", Eq("user_id", "users.id"))
 	tables := item.UsingTables()
 
@@ -224,7 +223,6 @@ func TestSelectUsingTables(t *testing.T) {
 }
 
 func TestSelectReturning(t *testing.T) {
-	t.Parallel()
 	item := Select("id").From("users")
 	item.LimitReturningOne()
 
@@ -238,7 +236,6 @@ func TestSelectReturning(t *testing.T) {
 }
 
 func TestOrder(t *testing.T) {
-	t.Parallel()
 	orderCases := []orderCase{
 		{
 			builder:        Asc("age"),

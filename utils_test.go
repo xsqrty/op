@@ -7,7 +7,6 @@ import (
 )
 
 func TestExprOrCol(t *testing.T) {
-	t.Parallel()
 	sql, args, err := exprOrCol("age", options)
 
 	assert.NoError(t, err)
@@ -28,7 +27,6 @@ func TestExprOrCol(t *testing.T) {
 }
 
 func TestExprOrVal(t *testing.T) {
-	t.Parallel()
 	sql, args, err := exprOrVal("age", options)
 
 	assert.NoError(t, err)
@@ -43,7 +41,6 @@ func TestExprOrVal(t *testing.T) {
 }
 
 func TestConcatUpdates(t *testing.T) {
-	t.Parallel()
 	sql, args, err := concatUpdates([]Column{"age", "name"}, []driver.Sqler{driver.Value(100), driver.Value("Alex")}, options)
 
 	assert.NoError(t, err)
@@ -64,7 +61,6 @@ func TestConcatUpdates(t *testing.T) {
 }
 
 func TestConcatFields(t *testing.T) {
-	t.Parallel()
 	sql, args, err := concatFields[Column]([]Column{"id", "age"}, options)
 
 	assert.NoError(t, err)

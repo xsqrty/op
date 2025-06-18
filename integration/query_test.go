@@ -10,7 +10,6 @@ import (
 )
 
 func TestQuery(t *testing.T) {
-	t.Parallel()
 	qe, rollback, err := GetQueryExec(ctx)
 	defer rollback()
 	require.NoError(t, err)
@@ -41,7 +40,6 @@ func TestQuery(t *testing.T) {
 }
 
 func TestQueryOne(t *testing.T) {
-	t.Parallel()
 	qe, rollback, err := GetQueryExec(ctx)
 	defer rollback()
 	require.NoError(t, err)
@@ -55,7 +53,6 @@ func TestQueryOne(t *testing.T) {
 }
 
 func TestQueryDelete(t *testing.T) {
-	t.Parallel()
 	qe, rollback, err := GetQueryExec(ctx)
 	defer rollback()
 	require.NoError(t, err)
@@ -86,7 +83,6 @@ func TestQueryDelete(t *testing.T) {
 }
 
 func TestQueryInsert(t *testing.T) {
-	t.Parallel()
 	qe, rollback, err := GetQueryExec(ctx)
 	defer rollback()
 	require.NoError(t, err)
@@ -116,7 +112,6 @@ func TestQueryInsert(t *testing.T) {
 }
 
 func TestQueryUpdate(t *testing.T) {
-	t.Parallel()
 	qe, rollback, err := GetQueryExec(ctx)
 	defer rollback()
 	require.NoError(t, err)

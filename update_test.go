@@ -87,7 +87,6 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateUsingTables(t *testing.T) {
-	t.Parallel()
 	item := Update("users", Updates{})
 	tables := item.UsingTables()
 
@@ -96,7 +95,6 @@ func TestUpdateUsingTables(t *testing.T) {
 }
 
 func TestUpdateReturning(t *testing.T) {
-	t.Parallel()
 	item := Update("users", Updates{}).Returning("id")
 	item.LimitReturningOne()
 

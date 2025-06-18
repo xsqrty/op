@@ -14,8 +14,6 @@ func (e errorSqler) Sql(_ *SqlOptions) (string, []any, error) {
 }
 
 func TestSql(t *testing.T) {
-	t.Parallel()
-
 	options := NewPostgresSqlOptions()
 	sql, args, err := Sql(Pure("?? ?,?,?", 1, "2", 3.01), options)
 	assert.NoError(t, err)

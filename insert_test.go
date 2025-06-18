@@ -127,7 +127,6 @@ func TestInsert(t *testing.T) {
 }
 
 func TestInsertUsingTables(t *testing.T) {
-	t.Parallel()
 	item := Insert("users", Inserting{})
 	tables := item.UsingTables()
 
@@ -136,7 +135,6 @@ func TestInsertUsingTables(t *testing.T) {
 }
 
 func TestInsertReturning(t *testing.T) {
-	t.Parallel()
 	item := Insert("users", Inserting{}).Returning("id")
 	item.LimitReturningOne()
 

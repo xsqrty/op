@@ -10,7 +10,6 @@ import (
 )
 
 func TestCountOf(t *testing.T) {
-	t.Parallel()
 	query := testutil.NewMockQueryable()
 	query.
 		On("QueryRow", mock.Anything, `SELECT (COUNT("id")) AS "total_count" FROM "users" WHERE "Name" = ? LIMIT ?`, []any{"Alex", int64(1)}).
@@ -40,7 +39,6 @@ func TestCountOf(t *testing.T) {
 }
 
 func TestCountOfError(t *testing.T) {
-	t.Parallel()
 	query := testutil.NewMockQueryable()
 	query.
 		On("QueryRow", mock.Anything, `SELECT (COUNT("id")) AS "total_count" FROM "users" WHERE "Name" = ? LIMIT ?`, []any{"Alex", int64(1)}).

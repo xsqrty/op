@@ -11,7 +11,6 @@ import (
 )
 
 func TestPaginate(t *testing.T) {
-	t.Parallel()
 	query := testutil.NewMockQueryable()
 	query.
 		On("Query", mock.Anything, `SELECT ("users"."id") AS "id",("users"."name") AS "name" FROM "users" WHERE ("id" = ? OR "id" = ?) ORDER BY "id" DESC LIMIT ?`, []any{float64(25), float64(26), int64(10)}).

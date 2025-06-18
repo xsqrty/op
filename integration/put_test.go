@@ -11,7 +11,6 @@ import (
 )
 
 func TestPut(t *testing.T) {
-	t.Parallel()
 	qe, rollback, err := GetQueryExec(ctx)
 	defer rollback()
 	require.NoError(t, err)

@@ -9,7 +9,6 @@ import (
 )
 
 func TestPut(t *testing.T) {
-	t.Parallel()
 	query := testutil.NewMockQueryable()
 	query.
 		On("QueryRow", mock.Anything, `INSERT INTO "users" ("name") VALUES (?) ON CONFLICT ("id") DO UPDATE SET "name"=EXCLUDED."name" RETURNING "users"."id","users"."name"`, []any{"Alex"}).

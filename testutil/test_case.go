@@ -19,7 +19,6 @@ type TestCase struct {
 func RunCases(t *testing.T, options *driver.SqlOptions, testCases []TestCase) {
 	for _, c := range testCases {
 		t.Run(c.Name, func(t *testing.T) {
-			t.Parallel()
 			ops := options
 			if c.SqlOptions != nil {
 				ops = c.SqlOptions
