@@ -8,6 +8,7 @@ import (
 type QueryBuilder[T any] interface {
 	GetOne(ctx context.Context, db Queryable) (*T, error)
 	GetMany(ctx context.Context, db Queryable) ([]*T, error)
+	Wrap(name string, wrap SelectBuilder) QueryBuilder[T]
 }
 
 type Returnable interface {
@@ -47,6 +48,11 @@ func Query[T any](ret Returnable) QueryBuilder[T] {
 	}
 }
 
+func (q *query[T]) Wrap(name string, wrap SelectBuilder) QueryBuilder[T] {
+	q.wrap = &wrapper{name: name, sb: wrap}
+	return q
+}
+
 func (q *query[T]) GetOne(ctx context.Context, db Queryable) (*T, error) {
 	result := new(T)
 	md, keys, err := prepareModelQuery(q, result)
@@ -60,7 +66,7 @@ func (q *query[T]) GetOne(ctx context.Context, db Queryable) (*T, error) {
 	}
 
 	q.ret.LimitReturningOne()
-	sql, args, err := db.Sql(q.ret)
+	sql, args, err := q.getQuery(db)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +87,7 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 		return nil, err
 	}
 
-	sql, args, err := db.Sql(q.ret)
+	sql, args, err := q.getQuery(db)
 	if err != nil {
 		return nil, err
 	}
@@ -117,4 +123,12 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 	}
 
 	return result, nil
+}
+
+func (q *query[T]) getQuery(db Queryable) (string, []any, error) {
+	if q.wrap != nil {
+		return db.Sql(q.wrap.sb.From(As(q.wrap.name, q.ret)))
+	}
+
+	return db.Sql(q.ret)
 }

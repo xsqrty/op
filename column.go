@@ -16,15 +16,15 @@ type Alias interface {
 }
 
 type alias struct {
-	pure bool
 	name string
+	pure bool
 	expr driver.Sqler
 }
 
 const delimByte = '.'
 
 func As(name string, expr driver.Sqler) Alias {
-	return &alias{name: name, pure: false, expr: expr}
+	return &alias{name: name, expr: expr}
 }
 
 func ColumnAlias(col Column) Alias {
@@ -88,11 +88,7 @@ func (a *alias) Rename(name string) {
 
 func (a *alias) Sql(options *driver.SqlOptions) (string, []any, error) {
 	if a.pure {
-		if col, ok := a.expr.(Column); ok {
-			return col.Sql(options)
-		} else {
-			return "", nil, fmt.Errorf("no target found in name")
-		}
+		return a.expr.Sql(options)
 	}
 
 	sql, args, err := a.expr.Sql(options)
@@ -119,8 +115,8 @@ func wrapAlias(al *alias, options *driver.SqlOptions) (string, []any, error) {
 
 	for i := 0; i < len(al.name); i++ {
 		var b = al.name[i]
-		if options.SafeColumns && !isAllowedColumnByte(b) {
-			return "", nil, fmt.Errorf("name %q contains illegal character '%c'", al.name, b)
+		if options.SafeColumns && (!isAllowedColumnByte(b) || b == delimByte) {
+			return "", nil, fmt.Errorf("alias %q contains illegal character '%c'", al.name, b)
 		}
 
 		buf.WriteByte(b)

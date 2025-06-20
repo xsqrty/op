@@ -64,7 +64,7 @@ func TestAlias(t *testing.T) {
 			Builder:      As("unsafe+name", Column("Col")),
 			ExpectedSql:  "",
 			ExpectedArgs: []any(nil),
-			ExpectedErr:  `name "unsafe+name" contains illegal character '+'`,
+			ExpectedErr:  `alias "unsafe+name" contains illegal character '+'`,
 		},
 		{
 			Name:         "alias_col_rename",
@@ -84,13 +84,6 @@ func TestAlias(t *testing.T) {
 			ExpectedSql:  "",
 			ExpectedArgs: []any(nil),
 			ExpectedErr:  `unknown type: int must be a string or Alias`,
-		},
-		{
-			Name:         "alias_no_target",
-			Builder:      &alias{pure: true},
-			ExpectedSql:  "",
-			ExpectedArgs: []any(nil),
-			ExpectedErr:  `no target found in name`,
 		},
 	})
 }

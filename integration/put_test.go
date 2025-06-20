@@ -26,7 +26,7 @@ func TestPut(t *testing.T) {
 	err = op.Put(usersTable, u).With(ctx, qe)
 	assert.NoError(t, err)
 
-	fromDb, err := op.Query[User](op.Select().From(usersTable).Where(op.Eq("name", "Rename user"))).GetOne(ctx, qe)
+	fromDb, err := op.Query[MockUser](op.Select().From(usersTable).Where(op.Eq("name", "Rename user"))).GetOne(ctx, qe)
 	assert.NoError(t, err)
 	assert.Equal(t, u, fromDb)
 	assert.Equal(t, updatedAt.UnixMilli(), time.Time(fromDb.UpdatedAt).UnixMilli())

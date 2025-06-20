@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-type User struct {
+type QueryMockUser struct {
 	ID   int    `op:"id,primary"`
 	Name string `op:"name"`
 }
@@ -24,7 +24,7 @@ func TestGetMany(t *testing.T) {
 			testutil.NewMockRow(nil, []any{2, "John"}),
 		}), nil)
 
-	users, err := Query[User](Select().From("users").Where(Eq("users.id", 1))).GetMany(context.Background(), query)
+	users, err := Query[QueryMockUser](Select().From("users").Where(Eq("users.id", 1))).GetMany(context.Background(), query)
 	assert.NoError(t, err)
 	assert.Len(t, users, 2)
 
@@ -41,7 +41,7 @@ func TestGetOne(t *testing.T) {
 		On("QueryRow", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" WHERE "users"."id" = ? LIMIT ?`, []any{100, int64(1)}).
 		Return(testutil.NewMockRow(nil, []any{100, "Bob"}))
 
-	user, err := Query[User](Select().From("users").Where(Eq("users.id", 100))).GetOne(context.Background(), query)
+	user, err := Query[QueryMockUser](Select().From("users").Where(Eq("users.id", 100))).GetOne(context.Background(), query)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 100, user.ID)
@@ -54,21 +54,21 @@ func TestGetOneError(t *testing.T) {
 		On("QueryRow", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" LIMIT ?`, []any{int64(1)}).
 		Return(testutil.NewMockRow(errors.New("sql syntax error"), nil))
 
-	user, err := Query[User](Select().From("users")).GetOne(context.Background(), query)
+	user, err := Query[QueryMockUser](Select().From("users")).GetOne(context.Background(), query)
 	assert.Nil(t, user)
 	assert.EqualError(t, err, "sql syntax error")
 }
 
 func TestGetOneSqlError(t *testing.T) {
 	query := testutil.NewMockQueryable()
-	user, err := Query[User](Select().From("users").Where(Eq("a+b", 1))).GetOne(context.Background(), query)
+	user, err := Query[QueryMockUser](Select().From("users").Where(Eq("a+b", 1))).GetOne(context.Background(), query)
 	assert.Nil(t, user)
 	assert.EqualError(t, err, `target "a+b" contains illegal character '+'`)
 }
 
 func TestGetOneModelError(t *testing.T) {
 	query := testutil.NewMockQueryable()
-	user, err := Query[User](Select("undefined").From("users")).GetOne(context.Background(), query)
+	user, err := Query[QueryMockUser](Select("undefined").From("users")).GetOne(context.Background(), query)
 	assert.Nil(t, user)
-	assert.EqualError(t, err, `"undefined": target is not described in the struct *op.User`)
+	assert.EqualError(t, err, `"undefined": target is not described in the struct *op.QueryMockUser`)
 }

@@ -13,11 +13,11 @@ type SelectBuilder interface {
 	From(from any) SelectBuilder
 	Where(exp driver.Sqler) SelectBuilder
 	Having(exp driver.Sqler) SelectBuilder
-	Join(table any, on ...driver.Sqler) SelectBuilder
-	LeftJoin(table any, on ...driver.Sqler) SelectBuilder
-	RightJoin(table any, on ...driver.Sqler) SelectBuilder
-	InnerJoin(table any, on ...driver.Sqler) SelectBuilder
-	CrossJoin(table any, on ...driver.Sqler) SelectBuilder
+	Join(table any, on driver.Sqler) SelectBuilder
+	LeftJoin(table any, on driver.Sqler) SelectBuilder
+	RightJoin(table any, on driver.Sqler) SelectBuilder
+	InnerJoin(table any, on driver.Sqler) SelectBuilder
+	CrossJoin(table any, on driver.Sqler) SelectBuilder
 	Limit(limit int64) SelectBuilder
 	Offset(offset int64) SelectBuilder
 	GroupBy(groups ...any) SelectBuilder
@@ -51,7 +51,7 @@ type order struct {
 type join struct {
 	table    Alias
 	joinType joinType
-	on       And
+	on       driver.Sqler
 }
 
 const (
@@ -139,27 +139,27 @@ func (sb *selectBuilder) Having(exp driver.Sqler) SelectBuilder {
 	return sb
 }
 
-func (sb *selectBuilder) Join(table any, on ...driver.Sqler) SelectBuilder {
+func (sb *selectBuilder) Join(table any, on driver.Sqler) SelectBuilder {
 	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinDefault})
 	return sb
 }
 
-func (sb *selectBuilder) LeftJoin(table any, on ...driver.Sqler) SelectBuilder {
+func (sb *selectBuilder) LeftJoin(table any, on driver.Sqler) SelectBuilder {
 	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinLeft})
 	return sb
 }
 
-func (sb *selectBuilder) RightJoin(table any, on ...driver.Sqler) SelectBuilder {
+func (sb *selectBuilder) RightJoin(table any, on driver.Sqler) SelectBuilder {
 	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinRight})
 	return sb
 }
 
-func (sb *selectBuilder) InnerJoin(table any, on ...driver.Sqler) SelectBuilder {
+func (sb *selectBuilder) InnerJoin(table any, on driver.Sqler) SelectBuilder {
 	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinInner})
 	return sb
 }
 
-func (sb *selectBuilder) CrossJoin(table any, on ...driver.Sqler) SelectBuilder {
+func (sb *selectBuilder) CrossJoin(table any, on driver.Sqler) SelectBuilder {
 	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinCross})
 	return sb
 }
@@ -242,7 +242,7 @@ func (sb *selectBuilder) Sql(options *driver.SqlOptions) (sql string, args []any
 			args = append(args, tableArgs...)
 			buf.WriteString(sql)
 
-			if len(sb.joins[i].on) == 0 {
+			if sb.joins[i].on == nil {
 				return "", nil, fmt.Errorf("%s operation requires an ON clause to specify join condition", sb.joins[i].joinType)
 			}
 

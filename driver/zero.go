@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-type ZeroUnixTime time.Time
 type ZeroFloat64 float64
 type ZeroString string
 type ZeroInt64 int64
@@ -92,50 +91,6 @@ func (zt *ZeroTime) Scan(value any) error {
 	}
 
 	return fmt.Errorf("cannot convert %T to ZeroTime", value)
-}
-
-// IsZero reports whether t represents zero time,
-// this is a wrapper around the method `time.Time.IsZero()`
-func (zt ZeroUnixTime) IsZero() bool {
-	return time.Time(zt).IsZero()
-}
-
-// String returns the time formatted using the format string
-// "2006-01-02 15:04:05.999999999 -0700 MST"
-func (zt ZeroUnixTime) String() string {
-	return time.Time(zt).String()
-}
-
-// Value implements the [driver.Valuer] interface.
-func (zt ZeroUnixTime) Value() (driver.Value, error) {
-	if zt.IsZero() {
-		return 0, nil
-	}
-
-	return time.Time(zt).UnixMilli(), nil
-}
-
-// Scan implements the [Scanner] interface.
-func (zt *ZeroUnixTime) Scan(value any) error {
-	if value == nil {
-		*zt = ZeroUnixTime(time.Time{})
-		return nil
-	}
-
-	switch v := value.(type) {
-	case time.Time:
-		*zt = ZeroUnixTime(v)
-		return nil
-	case int64:
-		if v == 0 {
-			*zt = ZeroUnixTime(time.Time{})
-			return nil
-		}
-		*zt = ZeroUnixTime(time.UnixMilli(v))
-		return nil
-	}
-
-	return fmt.Errorf("cannot convert %T to ZeroUnixTime", value)
 }
 
 // Value implements the [driver.Valuer] interface.

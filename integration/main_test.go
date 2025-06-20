@@ -12,27 +12,37 @@ import (
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/driver"
 	"log"
+	"math/rand/v2"
 	"testing"
 	"time"
 )
 
 const (
-	postgresUser = "postgres"
-	postgresPass = "postgres"
-	postgresDB   = "integration_test"
-	usersTable   = "users"
+	postgresUser   = "postgres"
+	postgresPass   = "postgres"
+	postgresDB     = "integration_test"
+	companiesTable = "companies"
+	usersTable     = "users"
 )
 
-type User struct {
+type MockUser struct {
 	ID        int             `op:"id,primary"`
 	Name      string          `op:"name"`
 	Email     string          `op:"email"`
 	CreatedAt time.Time       `op:"created_at"`
+	CompanyId sql.NullInt64   `op:"company_id"`
 	UpdatedAt driver.ZeroTime `op:"updated_at"`
 	DeletedAt sql.NullTime    `op:"deleted_at"`
 }
 
-var mockUsers []*User
+type MockCompany struct {
+	ID        int       `op:"id,primary"`
+	Name      string    `op:"name"`
+	CreatedAt time.Time `op:"created_at"`
+}
+
+var mockUsers []*MockUser
+var mockCompanies []*MockCompany
 
 var pool *pgxpool.Pool
 var ctx = context.Background()
@@ -56,11 +66,18 @@ func TestMain(m *testing.M) {
 	}
 
 	for i := 0; i < 100; i++ {
-		mockUsers = append(mockUsers, &User{
+		mockUsers = append(mockUsers, &MockUser{
 			Name:      gofakeit.Name(),
 			Email:     gofakeit.Email(),
 			CreatedAt: gofakeit.Date(),
 			DeletedAt: sql.NullTime{Valid: i > 30 && i < 50, Time: gofakeit.Date()},
+		})
+	}
+
+	for i := 0; i < 10; i++ {
+		mockCompanies = append(mockCompanies, &MockCompany{
+			ID:   i + 1,
+			Name: gofakeit.Company(),
 		})
 	}
 
@@ -70,22 +87,50 @@ func TestMain(m *testing.M) {
 func CreateTables(ctx context.Context, pool *pgxpool.Pool) error {
 	_, err := pool.Exec(ctx, fmt.Sprintf(`
 		create table if not exists "%s" (
-		    id serial PRIMARY KEY,
-		    name text not null,
-		    email text not null,
-		    created_at timestamptz not null default now(),
-		    updated_at timestamptz,
-		    deleted_at timestamptz
+			id serial PRIMARY KEY,
+			name text not null,
+			created_at timestamptz not null default now()
+		)
+	`, companiesTable))
+	if err != nil {
+		return err
+	}
+
+	_, err = pool.Exec(ctx, fmt.Sprintf(`
+		create table if not exists "%s" (
+			id serial PRIMARY KEY,
+			name text not null,
+			email text not null,
+			company_id integer references companies(id) on delete cascade,
+			created_at timestamptz not null default now(),
+			updated_at timestamptz,
+			deleted_at timestamptz
 		)
 	`, usersTable))
+	if err != nil {
+		return err
+	}
 
 	return err
 }
 
 func DataSeed(ctx context.Context, qe driver.QueryExec) error {
-	for _, user := range mockUsers {
+	for _, company := range mockCompanies {
+		company.CreatedAt = time.Now()
+		err := op.Put[MockCompany](companiesTable, company).With(ctx, qe)
+		if err != nil {
+			return err
+		}
+	}
+
+	for i, user := range mockUsers {
+		comp := mockCompanies[rand.IntN(len(mockCompanies))]
 		user.CreatedAt = time.Now()
-		err := op.Put[User](usersTable, user).With(ctx, qe)
+		if i%2 == 0 {
+			user.CompanyId = sql.NullInt64{Valid: true, Int64: int64(comp.ID)}
+		}
+
+		err := op.Put[MockUser](usersTable, user).With(ctx, qe)
 		if err != nil {
 			return err
 		}

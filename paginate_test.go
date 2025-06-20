@@ -10,33 +10,27 @@ import (
 	"testing"
 )
 
+type PaginateMockUser struct {
+	Name string `op:"user_name"`
+	ID   int    `op:"user_id"`
+	Age  int    `op:"user_age"`
+}
+
 func TestPaginate(t *testing.T) {
 	query := testutil.NewMockQueryable()
 	query.
-		On("Query", mock.Anything, `SELECT ("users"."id") AS "id",("users"."name") AS "name" FROM "users" WHERE ("id" = ? OR "id" = ?) ORDER BY "id" DESC LIMIT ?`, []any{float64(25), float64(26), int64(10)}).
+		On("Query", mock.Anything, `SELECT * FROM (SELECT ("users"."id") AS "user_id",("users"."age") AS "user_age",("users"."name") AS "user_name" FROM "users") AS "result" WHERE ("age" = ? OR "age" = ?) ORDER BY "id" DESC LIMIT ?`, []any{float64(25), float64(26), int64(10)}).
 		Return(testutil.NewMockRows(nil, []driver.Scanner{
-			testutil.NewMockRow(nil, []any{1, "Alex"}),
-			testutil.NewMockRow(nil, []any{2, "John"}),
+			testutil.NewMockRow(nil, []any{1, 25, "Alex"}),
+			testutil.NewMockRow(nil, []any{2, 26, "John"}),
 		}), nil)
 
-	query.On("QueryRow", mock.Anything, `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."id") AS "id",("users"."name") AS "name" FROM "users" WHERE ("id" = ? OR "id" = ?)) AS "result"`, []any{float64(25), float64(26)}).Return(testutil.NewMockRow(nil, []any{int64(2)}))
+	query.On("QueryRow", mock.Anything, `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."id") AS "user_id",("users"."age") AS "user_age",("users"."name") AS "user_name" FROM "users") AS "result" WHERE ("age" = ? OR "age" = ?)`, []any{float64(25), float64(26)}).Return(testutil.NewMockRow(nil, []any{int64(2)}))
 
 	reqString := `{
 			"limit": 10,
 			"filters": {
-					"group": "or",
-					"filters": [
-							{
-									"op": "eq",
-									"key": "id",
-									"value": 25
-							},
-							{
-									"op": "eq",
-									"key": "id",
-									"value": 26
-							}
-					]
+					"$or": [{"age": 25}, {"age": {"$eq": 26}}]
 			},
 			"orders": [
 					{
@@ -50,10 +44,12 @@ func TestPaginate(t *testing.T) {
 	err := json.Unmarshal([]byte(reqString), &req)
 	assert.NoError(t, err)
 
-	res, err := Paginate[User]("users", &req, []string{"id"}).
+	res, err := Paginate[PaginateMockUser]("users", &req).
+		WhiteList("id", "age", "name").
 		Fields(
-			As("id", Column("users.id")),
-			As("name", Column("users.name")),
+			As("user_id", Column("users.id")),
+			As("user_age", Column("users.age")),
+			As("user_name", Column("users.name")),
 		).
 		With(context.Background(), query)
 
@@ -61,8 +57,10 @@ func TestPaginate(t *testing.T) {
 	assert.Equal(t, int64(2), res.TotalRows)
 
 	assert.Equal(t, 1, res.Rows[0].ID)
+	assert.Equal(t, 25, res.Rows[0].Age)
 	assert.Equal(t, "Alex", res.Rows[0].Name)
 
 	assert.Equal(t, 2, res.Rows[1].ID)
+	assert.Equal(t, 26, res.Rows[1].Age)
 	assert.Equal(t, "John", res.Rows[1].Name)
 }

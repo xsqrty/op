@@ -10,17 +10,18 @@ import (
 
 type Paginator[T any] interface {
 	With(ctx context.Context, db Queryable) (*PaginateResult[T], error)
-	Fields(fields ...any) Paginator[T]
+	WhiteList(whitelist ...string) Paginator[T]
+	Fields(fields ...Alias) Paginator[T]
 	MaxFilterDepth(depth int64) Paginator[T]
+	MaxSliceLen(maxLen int64) Paginator[T]
 	MaxLimit(limit int64) Paginator[T]
 	MinLimit(limit int64) Paginator[T]
-	Having(exp driver.Sqler) Paginator[T]
 	Where(exp driver.Sqler) Paginator[T]
-	Join(table any, on ...driver.Sqler) Paginator[T]
-	LeftJoin(table any, on ...driver.Sqler) Paginator[T]
-	RightJoin(table any, on ...driver.Sqler) Paginator[T]
-	InnerJoin(table any, on ...driver.Sqler) Paginator[T]
-	CrossJoin(table any, on ...driver.Sqler) Paginator[T]
+	Join(table any, on driver.Sqler) Paginator[T]
+	LeftJoin(table any, on driver.Sqler) Paginator[T]
+	RightJoin(table any, on driver.Sqler) Paginator[T]
+	InnerJoin(table any, on driver.Sqler) Paginator[T]
+	CrossJoin(table any, on driver.Sqler) Paginator[T]
 	GroupBy(groups ...any) Paginator[T]
 }
 
@@ -31,22 +32,12 @@ type PaginateResult[T any] struct {
 
 type PaginateRequest struct {
 	Orders  []PaginateOrder `json:"orders,omitempty"`
-	Filters *FilterGroup    `json:"filters,omitempty"`
+	Filters PaginateFilters `json:"filters,omitempty"`
 	Limit   int64           `json:"limit,omitempty"`
 	Offset  int64           `json:"offset,omitempty"`
 }
 
-type FilterGroup struct {
-	Group   string        `json:"group,omitempty"`
-	Filters []Filter      `json:"filters,omitempty"`
-	Groups  []FilterGroup `json:"groups,omitempty"`
-}
-
-type Filter struct {
-	Operator string      `json:"op"`
-	Key      string      `json:"key"`
-	Value    interface{} `json:"value"`
-}
+type PaginateFilters map[string]any
 
 type PaginateOrder struct {
 	Key  string `json:"key"`
@@ -54,40 +45,66 @@ type PaginateOrder struct {
 }
 
 type paginate[T any] struct {
-	fieldsAllowed []string
-	request       *PaginateRequest
-	rowsSb        SelectBuilder
-	countSb       SelectBuilder
-	countSbWrap   SelectBuilder
-	minLimit      int64
-	maxLimit      int64
-	maxDepth      int64
+	whitelist   []string
+	fields      []Alias
+	request     *PaginateRequest
+	rowsSb      SelectBuilder
+	rowsSbWrap  SelectBuilder
+	countSbWrap SelectBuilder
+	minLimit    int64
+	maxLimit    int64
+	maxDepth    int64
+	maxSliceLen int64
 }
 
+const (
+	PaginateOr        = "$or"
+	PaginateAnd       = "$and"
+	PaginateIn        = "$in"
+	PaginateNotIn     = "$nin"
+	PaginateEq        = "$eq"
+	PaginateNe        = "$ne"
+	PaginateLt        = "$lt"
+	PaginateGt        = "$gt"
+	PaginateLte       = "$lte"
+	PaginateGte       = "$gte"
+	PaginateLike      = "$like"
+	PaginateLeftLike  = "$llike"
+	PaginateRightLike = "$rlike"
+)
+
 var (
+	ErrFilterSliceExceeded = errors.New("filter array length exceeded")
 	ErrFilterDepthExceeded = errors.New("filter depth exceeded")
+	ErrDisallowedKey       = errors.New("disallowed key")
+	ErrFilterInvalid       = errors.New("filter invalid")
 )
 
 const (
 	defaultMinLimit    = 1
 	defaultMaxLimit    = math.MaxInt64
 	defaultFilterDepth = 5
+	defaultMaxSliceLen = 10
 )
 
-func Paginate[T any](table string, request *PaginateRequest, fieldsAllowed []string) Paginator[T] {
+func Paginate[T any](table string, request *PaginateRequest) Paginator[T] {
 	return &paginate[T]{
-		request:       request,
-		rowsSb:        Select().From(table),
-		countSb:       Select().From(table),
-		countSbWrap:   Select(As(totalCountColumn, Count(driver.Pure("*")))),
-		fieldsAllowed: fieldsAllowed,
-		maxLimit:      defaultMaxLimit,
-		minLimit:      defaultMinLimit,
-		maxDepth:      defaultFilterDepth,
+		request:     request,
+		rowsSb:      Select().From(table),
+		rowsSbWrap:  Select(),
+		countSbWrap: Select(As(totalCountColumn, Count(driver.Pure("*")))),
+		maxLimit:    defaultMaxLimit,
+		minLimit:    defaultMinLimit,
+		maxDepth:    defaultFilterDepth,
+		maxSliceLen: defaultMaxSliceLen,
 	}
 }
 
 func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[T], error) {
+	if len(pg.fields) == 0 {
+		return nil, fmt.Errorf("fields is empty. Please specify returning by .Fields()")
+	}
+
 	limit := pg.request.Limit
 	offset := pg.request.Offset
 
@@ -107,20 +124,22 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 		return nil, err
 	}
 
-	pg.rowsSb.Where(where)
-	pg.countSb.Where(where)
+	pg.rowsSb.SetReturningAliases(pg.fields)
 
-	pg.rowsSb.OrderBy(orders...)
-	pg.rowsSb.Limit(limit)
-	pg.rowsSb.Offset(offset)
+	pg.rowsSbWrap.Where(where)
+	pg.countSbWrap.Where(where)
 
-	rows, err := Query[T](pg.rowsSb).GetMany(ctx, db)
+	pg.rowsSbWrap.OrderBy(orders...)
+	pg.rowsSbWrap.Limit(limit)
+	pg.rowsSbWrap.Offset(offset)
+
+	rows, err := Query[T](pg.rowsSb).Wrap("result", pg.rowsSbWrap).GetMany(ctx, db)
 	if err != nil {
 		return nil, err
 	}
 
 	var totalCount int64
-	sql, args, err := db.Sql(pg.countSbWrap.From(As("result", pg.countSb)))
+	sql, args, err := db.Sql(pg.countSbWrap.From(As("result", pg.rowsSb)))
 	if err != nil {
 		return nil, err
 	}
@@ -136,15 +155,23 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 	}, nil
 }
 
-func (pg *paginate[T]) Fields(fields ...any) Paginator[T] {
-	pg.rowsSb.SetReturning(fields)
-	pg.countSb.SetReturning(fields)
+func (pg *paginate[T]) WhiteList(whitelist ...string) Paginator[T] {
+	pg.whitelist = whitelist
+	return pg
+}
 
+func (pg *paginate[T]) Fields(fields ...Alias) Paginator[T] {
+	pg.fields = fields
 	return pg
 }
 
 func (pg *paginate[T]) MaxFilterDepth(depth int64) Paginator[T] {
 	pg.maxDepth = depth
+	return pg
+}
+
+func (pg *paginate[T]) MaxSliceLen(maxLen int64) Paginator[T] {
+	pg.maxSliceLen = maxLen
 	return pg
 }
 
@@ -158,111 +185,45 @@ func (pg *paginate[T]) MinLimit(limit int64) Paginator[T] {
 	return pg
 }
 
-func (pg *paginate[T]) Having(exp driver.Sqler) Paginator[T] {
-	pg.rowsSb.Having(exp)
-	pg.countSb.Having(exp)
-
-	return pg
-}
-
 func (pg *paginate[T]) Where(exp driver.Sqler) Paginator[T] {
 	pg.rowsSb.Where(exp)
-	pg.countSb.Where(exp)
-
 	return pg
 }
 
-func (pg *paginate[T]) Join(table any, on ...driver.Sqler) Paginator[T] {
-	pg.rowsSb.Join(table, on...)
-	pg.countSb.Join(table, on...)
-
+func (pg *paginate[T]) Join(table any, on driver.Sqler) Paginator[T] {
+	pg.rowsSb.Join(table, on)
 	return pg
 }
 
-func (pg *paginate[T]) LeftJoin(table any, on ...driver.Sqler) Paginator[T] {
-	pg.rowsSb.LeftJoin(table, on...)
-	pg.countSb.LeftJoin(table, on...)
-
+func (pg *paginate[T]) LeftJoin(table any, on driver.Sqler) Paginator[T] {
+	pg.rowsSb.LeftJoin(table, on)
 	return pg
 }
 
-func (pg *paginate[T]) RightJoin(table any, on ...driver.Sqler) Paginator[T] {
-	pg.rowsSb.RightJoin(table, on...)
-	pg.countSb.RightJoin(table, on...)
-
+func (pg *paginate[T]) RightJoin(table any, on driver.Sqler) Paginator[T] {
+	pg.rowsSb.RightJoin(table, on)
 	return pg
 }
 
-func (pg *paginate[T]) InnerJoin(table any, on ...driver.Sqler) Paginator[T] {
-	pg.rowsSb.InnerJoin(table, on...)
-	pg.countSb.InnerJoin(table, on...)
-
+func (pg *paginate[T]) InnerJoin(table any, on driver.Sqler) Paginator[T] {
+	pg.rowsSb.InnerJoin(table, on)
 	return pg
 }
 
-func (pg *paginate[T]) CrossJoin(table any, on ...driver.Sqler) Paginator[T] {
-	pg.rowsSb.CrossJoin(table, on...)
-	pg.countSb.CrossJoin(table, on...)
-
+func (pg *paginate[T]) CrossJoin(table any, on driver.Sqler) Paginator[T] {
+	pg.rowsSb.CrossJoin(table, on)
 	return pg
 }
 
 func (pg *paginate[T]) GroupBy(groups ...any) Paginator[T] {
 	pg.rowsSb.GroupBy(groups...)
-	pg.countSb.GroupBy(groups...)
-	
 	return pg
-}
-
-func (pg *paginate[T]) parseFilters(filters *FilterGroup, depth int64) (driver.Sqler, error) {
-	if filters == nil {
-		return nil, nil
-	}
-
-	if depth >= pg.maxDepth {
-		return nil, fmt.Errorf("paginate: %w, max depth %d", ErrFilterDepthExceeded, pg.maxDepth)
-	}
-
-	var result []driver.Sqler
-	for i := range filters.Filters {
-		if !pg.isFieldAllowed(filters.Filters[i].Key) {
-			return nil, fmt.Errorf("paginate: target %q is not allowed", filters.Filters[i].Key)
-		}
-
-		operator, err := getFilterOperator(&filters.Filters[i])
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, operator)
-	}
-
-	for i := range filters.Groups {
-		computedGroup, err := pg.parseFilters(&filters.Groups[i], depth+1)
-		if err != nil {
-			return nil, err
-		}
-
-		if computedGroup != nil {
-			result = append(result, computedGroup)
-		}
-	}
-
-	if len(result) == 0 {
-		return nil, nil
-	}
-
-	if filters.Group == "or" {
-		return Or(result), nil
-	}
-
-	return And(result), nil
 }
 
 func (pg *paginate[T]) parseOrders(orders []PaginateOrder) ([]Order, error) {
 	result := make([]Order, 0, len(orders))
 	for i := range orders {
-		if !pg.isFieldAllowed(orders[i].Key) {
+		if !pg.isAllowedKey(orders[i].Key) {
 			return nil, fmt.Errorf("paginate: target %q is not allowed", orders[i].Key)
 		}
 
@@ -276,8 +237,8 @@ func (pg *paginate[T]) parseOrders(orders []PaginateOrder) ([]Order, error) {
 	return result, nil
 }
 
-func (pg *paginate[T]) isFieldAllowed(key string) bool {
-	for _, k := range pg.fieldsAllowed {
+func (pg *paginate[T]) isAllowedKey(key string) bool {
+	for _, k := range pg.whitelist {
 		if k == key {
 			return true
 		}
@@ -286,33 +247,173 @@ func (pg *paginate[T]) isFieldAllowed(key string) bool {
 	return false
 }
 
-func getFilterOperator(filter *Filter) (driver.Sqler, error) {
-	switch filter.Operator {
-	case "eq":
-		return Eq(filter.Key, filter.Value), nil
-	case "ne":
-		return Ne(filter.Key, filter.Value), nil
-	case "lt":
-		return Lt(filter.Key, filter.Value), nil
-	case "gt":
-		return Gt(filter.Key, filter.Value), nil
-	case "lte":
-		return Lte(filter.Key, filter.Value), nil
-	case "gte":
-		return Gte(filter.Key, filter.Value), nil
-	case "in":
-		if v, ok := filter.Value.([]any); ok {
-			return In(filter.Key, v...), nil
-		}
-
-		return nil, fmt.Errorf("invalid value for %q operator", filter.Operator)
-	case "like":
-		return ILike(filter.Key, "%"+fmt.Sprint(filter.Value)+"%"), nil
-	case "leftLike":
-		return ILike(filter.Key, fmt.Sprint(filter.Value)+"%"), nil
-	case "rightLight":
-		return ILike(filter.Key, "%"+fmt.Sprint(filter.Value)), nil
+func (pg *paginate[T]) parseFilters(filters PaginateFilters, depth int64) (And, error) {
+	if filters == nil {
+		return nil, nil
 	}
 
-	return nil, fmt.Errorf("invalid filter operator: %s", filter.Operator)
+	if depth >= pg.maxDepth {
+		return nil, fmt.Errorf("paginate: %w, max depth %d", ErrFilterDepthExceeded, pg.maxDepth)
+	}
+
+	var and And
+	for k, v := range filters {
+		if k == PaginateAnd || k == PaginateOr {
+			list, ok := v.([]any)
+			if !ok {
+				return nil, fmt.Errorf("paginate: group %q must be an array: %w", k, ErrFilterInvalid)
+			}
+
+			if len(list) > int(pg.maxSliceLen) {
+				return nil, fmt.Errorf("paginate: group %q value is too long: %w", k, ErrFilterSliceExceeded)
+			}
+
+			var group And
+			for i, item := range list {
+				itemMap, ok := item.(map[string]any)
+				if !ok {
+					return nil, fmt.Errorf("paginate: group %q[%d] is invalid: %w", k, i, ErrFilterInvalid)
+				}
+
+				parsed, err := pg.parseFilters(itemMap, depth+1)
+				if err != nil {
+					return nil, err
+				}
+
+				group = appendToAndGroup(group, parsed)
+			}
+
+			if len(group) == 0 {
+				continue
+			}
+
+			if k == PaginateAnd {
+				and = appendToAndGroup[And](and, group)
+			} else if k == PaginateOr {
+				and = appendToAndGroup[Or](and, Or(group))
+			}
+
+		} else if isPrimitiveValue(v) {
+			if !pg.isAllowedKey(k) {
+				return nil, fmt.Errorf("paginate: filter key %q is not allowed: %w", k, ErrDisallowedKey)
+			}
+
+			and = append(and, Eq(k, v))
+		} else if group, ok := v.(map[string]any); ok {
+			if !pg.isAllowedKey(k) {
+				return nil, fmt.Errorf("paginate: filter key %q is not allowed: %w", k, ErrDisallowedKey)
+			}
+
+			var groupAnd And
+			for operator, val := range group {
+				err := pg.checkOperatorValue(operator, k, val)
+				if err != nil {
+					return nil, err
+				}
+
+				sqler, err := getFilterOperator(operator, k, val)
+				if err != nil {
+					return nil, err
+				}
+
+				groupAnd = append(groupAnd, sqler)
+			}
+
+			and = append(and, groupAnd...)
+		} else {
+			return nil, fmt.Errorf("paginate: invalid value: %q: %w", k, ErrFilterInvalid)
+		}
+	}
+
+	return and, nil
+}
+
+func (pg *paginate[T]) checkOperatorValue(operator, key string, value any) error {
+	if operator == PaginateIn || operator == PaginateNotIn {
+		if s, ok := value.([]any); ok {
+			if len(s) > int(pg.maxSliceLen) {
+				return fmt.Errorf("paginate: %q operator %q value is too long: %w", key, operator, ErrFilterSliceExceeded)
+			}
+
+			if isPrimitiveSlice(s) {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("paginate: invalid value: %q operator %q: %w", key, operator, ErrFilterInvalid)
+	}
+
+	if isPrimitiveValue(value) {
+		return nil
+	}
+
+	return fmt.Errorf("paginate: invalid value: %q operator %q: %w", key, operator, ErrFilterInvalid)
+}
+
+func getFilterOperator(operator, key string, value any) (driver.Sqler, error) {
+	switch operator {
+	case PaginateEq:
+		return Eq(key, value), nil
+	case PaginateNe:
+		return Ne(key, value), nil
+	case PaginateLt:
+		return Lt(key, value), nil
+	case PaginateGt:
+		return Gt(key, value), nil
+	case PaginateLte:
+		return Lte(key, value), nil
+	case PaginateGte:
+		return Gte(key, value), nil
+	case PaginateIn, PaginateNotIn:
+		if v, ok := value.([]any); ok {
+			if operator == PaginateIn {
+				return In(key, v...), nil
+			} else {
+				return Nin(key, v...), nil
+			}
+		}
+
+		return nil, fmt.Errorf("paginate: invalid value for %q operator: %w", operator, ErrFilterInvalid)
+	case PaginateLike:
+		return Like(Upper(key), "%"+fmt.Sprint(value)+"%"), nil
+	case PaginateLeftLike:
+		return Like(Upper(key), fmt.Sprint(value)+"%"), nil
+	case PaginateRightLike:
+		return Like(Upper(key), "%"+fmt.Sprint(value)), nil
+	}
+
+	return nil, fmt.Errorf("invalid filter operator: %s", operator)
+}
+
+func appendToAndGroup[T interface{ Or | And }](and And, group T) And {
+	if len(group) == 0 {
+		return and
+	} else if len(group) > 1 {
+		return append(and, driver.Sqler(group))
+	}
+
+	return append(and, group[0])
+}
+
+func isPrimitiveValue(val any) bool {
+	if val == nil {
+		return true
+	}
+
+	switch val.(type) {
+	case bool, string, float64:
+		return true
+	}
+
+	return false
+}
+
+func isPrimitiveSlice(s []any) bool {
+	for _, item := range s {
+		if !isPrimitiveValue(item) {
+			return false
+		}
+	}
+
+	return true
 }
