@@ -80,7 +80,7 @@ func (q *query[T]) GetOne(ctx context.Context, db Queryable) (*T, error) {
 }
 
 func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
-	var result []*T
+	result := make([]*T, 0)
 
 	md, keys, err := prepareModelQuery(q, new(T))
 	if err != nil {
