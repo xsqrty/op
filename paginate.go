@@ -126,8 +126,10 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 
 	pg.rowsSb.SetReturningAliases(pg.fields)
 
-	pg.rowsSbWrap.Where(where)
-	pg.countSbWrap.Where(where)
+	if len(where) > 0 {
+		pg.rowsSbWrap.Where(where)
+		pg.countSbWrap.Where(where)
+	}
 
 	pg.rowsSbWrap.OrderBy(orders...)
 	pg.rowsSbWrap.Limit(limit)
