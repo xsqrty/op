@@ -254,7 +254,7 @@ func (pg *paginate[T]) parseFilters(filters PaginateFilters, depth int64) (And, 
 		return nil, nil
 	}
 
-	if depth >= pg.maxDepth {
+	if depth > pg.maxDepth {
 		return nil, fmt.Errorf("paginate: %w, max depth %d", ErrFilterDepthExceeded, pg.maxDepth)
 	}
 
