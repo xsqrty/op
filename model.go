@@ -11,10 +11,10 @@ import (
 const opTag = "op"
 
 var (
-	ErrTargetNotPointer = errors.New("target must be a pointer to a struct")
-	ErrTargetIsNil      = errors.New("target must not be nil")
-	ErrAmbiguousField   = errors.New("target is ambiguous")
-	ErrFieldNotDescribe = errors.New("target is not described in the struct")
+	ErrTargetNotStructPointer = errors.New("target must be a pointer to a struct")
+	ErrTargetIsNil            = errors.New("target must not be nil")
+	ErrAmbiguousField         = errors.New("target is ambiguous")
+	ErrFieldNotDescribe       = errors.New("target is not described in the struct")
 )
 
 var modelsCache sync.Map
@@ -52,7 +52,7 @@ func getSettersKeysByTags(md *modelDetails, table string, tags []string) (map[st
 		path := md.mapping[table][tag]
 		setter, ok := md.setters[path]
 		if !ok {
-			return nil, fmt.Errorf("tag %s does not exist in the setters list", tag)
+			return nil, fmt.Errorf("tag %q does not exist in the setters list", tag)
 		}
 
 		setters[tag] = setter
@@ -66,7 +66,7 @@ func getModelDetails(table string, target any) (*modelDetails, error) {
 	kind := val.Kind()
 
 	if kind != reflect.Ptr {
-		return nil, ErrTargetNotPointer
+		return nil, ErrTargetNotStructPointer
 	}
 
 	if val.IsNil() {
@@ -76,11 +76,13 @@ func getModelDetails(table string, target any) (*modelDetails, error) {
 	val = val.Elem()
 	typ := val.Type()
 	if val.Kind() != reflect.Struct {
-		return nil, ErrTargetNotPointer
+		return nil, ErrTargetNotStructPointer
 	}
 
-	if cached, ok := modelsCache.Load(typ); ok {
-		return cached.(*modelDetails), nil
+	if cachedMap, ok := modelsCache.Load(table); ok {
+		if cache, ok := cachedMap.(*sync.Map).Load(typ); ok {
+			return cache.(*modelDetails), nil
+		}
 	}
 
 	result := &modelDetails{
@@ -90,16 +92,14 @@ func getModelDetails(table string, target any) (*modelDetails, error) {
 		tags:    make(map[string][]string),
 	}
 
-	err := forEachModel(table, val, nil, result)
-	if err != nil {
-		return nil, err
-	}
+	forEachModel(table, val, nil, result)
+	inner, _ := modelsCache.LoadOrStore(table, &sync.Map{})
+	inner.(*sync.Map).Store(typ, result)
 
-	modelsCache.Store(typ, result)
 	return result, nil
 }
 
-func forEachModel(table string, val reflect.Value, path []int, result *modelDetails) error {
+func forEachModel(table string, val reflect.Value, path []int, result *modelDetails) {
 	typ := val.Type()
 	for i := 0; i < val.NumField(); i++ {
 		fieldVal := val.Field(i)
@@ -125,11 +125,7 @@ func forEachModel(table string, val reflect.Value, path []int, result *modelDeta
 		}
 
 		if fieldVal.Kind() == reflect.Struct && isNested {
-			err := forEachModel(tag, fieldVal, append(path, i), result)
-			if err != nil {
-				return err
-			}
-
+			forEachModel(tag, fieldVal, append(path, i), result)
 			continue
 		}
 
@@ -151,14 +147,12 @@ func forEachModel(table string, val reflect.Value, path []int, result *modelDeta
 			result.primaryAsTag = tag
 		}
 	}
-
-	return nil
 }
 
 func getPointersByModelSetters(target any, setters map[string]modelSetters, keys []string) ([]any, error) {
 	valueOf := reflect.ValueOf(target)
 	if valueOf.Kind() != reflect.Ptr {
-		return nil, ErrTargetNotPointer
+		return nil, ErrTargetNotStructPointer
 	}
 
 	if valueOf.IsNil() {
@@ -180,20 +174,11 @@ func getPointersByModelSetters(target any, setters map[string]modelSetters, keys
 				}
 			}
 
-			if field.Kind() == reflect.Ptr {
-				if field.IsNil() {
-					field.Set(reflect.New(field.Type().Elem()))
-				}
-
-				result[i] = field.Interface()
-				continue
-			} else {
-				result[i] = field.Addr().Interface()
-				continue
-			}
+			result[i] = field.Addr().Interface()
+			continue
 		}
 
-		return nil, fmt.Errorf("target %s not found", key)
+		return nil, fmt.Errorf("key %q is not described in %T", key, target)
 	}
 
 	return result, nil
