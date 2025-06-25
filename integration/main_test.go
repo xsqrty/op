@@ -48,13 +48,13 @@ var pool *pgxpool.Pool
 var ctx = context.Background()
 
 func TestMain(m *testing.M) {
-	dsn, cleanup, err := StartContainer(ctx)
+	dsn, cleanup, err := startPostgresContainer(ctx)
 	defer cleanup()
 	if err != nil {
 		log.Fatalf("failed to start container: %v", err)
 	}
 
-	pool, err = ConnectDB(ctx, dsn)
+	pool, err = connectPostgres(ctx, dsn)
 	if err != nil {
 		log.Fatalf("failed to connect to postgres: %v", err)
 	}
@@ -150,7 +150,7 @@ func GetQueryExec(ctx context.Context) (driver.QueryExec, func(), error) {
 	}, nil
 }
 
-func ConnectDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+func connectPostgres(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func ConnectDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func StartContainer(ctx context.Context) (string, func(), error) {
+func startPostgresContainer(ctx context.Context) (string, func(), error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:latest",
 		ExposedPorts: []string{"5432/tcp"},
