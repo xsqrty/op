@@ -70,9 +70,13 @@ func (d *postgresDriver) QueryRow(ctx context.Context, sql string, args ...any) 
 
 func (d *postgresDriver) Query(ctx context.Context, sql string, args ...any) (Rows, error) {
 	rows, err := d.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
 	return &postgresDriverRows{
 		rows: rows,
-	}, err
+	}, nil
 }
 
 func (d *postgresDriver) SqlOptions() *SqlOptions {
