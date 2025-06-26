@@ -10,25 +10,21 @@ type Column string
 
 type Alias interface {
 	Alias() string
-	IsPure() bool
+	IsPureColumn() bool
 	Rename(name string)
 	Sql(*driver.SqlOptions) (string, []any, error)
 }
 
 type alias struct {
-	name string
-	pure bool
-	expr driver.Sqler
+	name         string
+	expr         driver.Sqler
+	isPureColumn bool
 }
 
 const delimByte = '.'
 
 func As(name string, expr driver.Sqler) Alias {
 	return &alias{name: name, expr: expr}
-}
-
-func ColumnAlias(col Column) Alias {
-	return &alias{pure: true, expr: col, name: string(col)}
 }
 
 func (c Column) Sql(options *driver.SqlOptions) (string, []any, error) {
@@ -75,19 +71,19 @@ func (a *alias) Alias() string {
 	return a.name
 }
 
-func (a *alias) IsPure() bool {
-	return a.pure
+func (a *alias) IsPureColumn() bool {
+	return a.isPureColumn
 }
 
 func (a *alias) Rename(name string) {
 	a.name = name
-	if a.pure {
+	if a.isPureColumn {
 		a.expr = Column(a.name)
 	}
 }
 
 func (a *alias) Sql(options *driver.SqlOptions) (string, []any, error) {
-	if a.pure {
+	if a.isPureColumn {
 		return a.expr.Sql(options)
 	}
 
@@ -105,6 +101,10 @@ func (a *alias) Sql(options *driver.SqlOptions) (string, []any, error) {
 	sql += " AS " + aSql
 	args = append(args, aArgs...)
 	return sql, args, nil
+}
+
+func columnAlias(col Column) Alias {
+	return &alias{isPureColumn: true, expr: col, name: string(col)}
 }
 
 func wrapAlias(al *alias, options *driver.SqlOptions) (string, []any, error) {

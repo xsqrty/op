@@ -25,19 +25,19 @@ func TestUpdate(t *testing.T) {
 		},
 		{
 			Name:         "update_column",
-			Builder:      Update(ColumnAlias("users"), Updates{"key": "value"}),
+			Builder:      Update(columnAlias("users"), Updates{"key": "value"}),
 			ExpectedSql:  `UPDATE "users" SET "key"=?`,
 			ExpectedArgs: []any{"value"},
 		},
 		{
 			Name:         "update_where",
-			Builder:      Update(ColumnAlias("users"), Updates{"key": "value"}).Where(Like("name", "Al%")),
+			Builder:      Update(columnAlias("users"), Updates{"key": "value"}).Where(Like("name", "Al%")),
 			ExpectedSql:  `UPDATE "users" SET "key"=? WHERE "name" LIKE ?`,
 			ExpectedArgs: []any{"value", "Al%"},
 		},
 		{
 			Name:         "update_where",
-			Builder:      Update(ColumnAlias("users"), Updates{"key": "value"}).Where(Like("name", "Al%")).Returning("id", ColumnAlias("name")),
+			Builder:      Update(columnAlias("users"), Updates{"key": "value"}).Where(Like("name", "Al%")).Returning("id", columnAlias("name")),
 			ExpectedSql:  `UPDATE "users" SET "key"=? WHERE "name" LIKE ? RETURNING "id","name"`,
 			ExpectedArgs: []any{"value", "Al%"},
 		},
@@ -98,11 +98,11 @@ func TestUpdateReturning(t *testing.T) {
 	item := Update("users", Updates{}).Returning("id")
 	item.LimitReturningOne()
 
-	assert.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
+	assert.Equal(t, []Alias{columnAlias("id")}, item.GetReturning())
 
 	item.SetReturning([]any{"id", "age"})
-	assert.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
+	assert.Equal(t, []Alias{columnAlias("id"), columnAlias("age")}, item.GetReturning())
 
-	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
-	assert.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
+	item.SetReturningAliases([]Alias{columnAlias("col2")})
+	assert.Equal(t, []Alias{columnAlias("col2")}, item.GetReturning())
 }

@@ -111,7 +111,7 @@ func (sb *selectBuilder) FieldsPrefix(fieldsPrefix string) SelectBuilder {
 func (sb *selectBuilder) From(from any) SelectBuilder {
 	switch val := from.(type) {
 	case string:
-		al := ColumnAlias(Column(val))
+		al := columnAlias(Column(val))
 		sb.from = al
 		return sb
 	case Alias:
@@ -361,7 +361,7 @@ func (sb *selectBuilder) setFields(fields []any) error {
 	for i := range fields {
 		switch val := fields[i].(type) {
 		case string:
-			sb.fields = append(sb.fields, ColumnAlias(Column(val)))
+			sb.fields = append(sb.fields, columnAlias(Column(val)))
 		case Alias:
 			sb.fields = append(sb.fields, val)
 		default:
@@ -375,7 +375,7 @@ func (sb *selectBuilder) setFields(fields []any) error {
 func (sb *selectBuilder) parseJoinTable(table any) Alias {
 	switch val := table.(type) {
 	case string:
-		return ColumnAlias(Column(val))
+		return columnAlias(Column(val))
 	case Alias:
 		return val
 	default:

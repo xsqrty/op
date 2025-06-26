@@ -218,7 +218,7 @@ func prepareModelQuery[T any](q *query[T], target *T) (*modelDetails, []string, 
 				}
 
 				aliasValue = aliases[0]
-				if retAliases[i].IsPure() {
+				if retAliases[i].IsPureColumn() {
 					retAliases[i].Rename(aliases[0])
 				}
 			}
