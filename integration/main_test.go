@@ -23,6 +23,7 @@ const (
 	postgresDB     = "integration_test"
 	companiesTable = "companies"
 	usersTable     = "users"
+	countriesTable = "countries"
 )
 
 type MockUser struct {
@@ -39,6 +40,11 @@ type MockCompany struct {
 	ID        int       `op:"id,primary"`
 	Name      string    `op:"name"`
 	CreatedAt time.Time `op:"created_at"`
+}
+
+type MockCountry struct {
+	ID   int    `op:"id,primary"`
+	Name string `op:"name"`
 }
 
 var mockUsers []*MockUser
@@ -101,12 +107,22 @@ func CreateTables(ctx context.Context, pool *pgxpool.Pool) error {
 			id serial PRIMARY KEY,
 			name text not null,
 			email text not null,
-			company_id integer references companies(id) on delete cascade,
+			company_id integer references %s(id) on delete cascade,
 			created_at timestamptz not null default now(),
 			updated_at timestamptz,
 			deleted_at timestamptz
 		)
-	`, usersTable))
+	`, usersTable, companiesTable))
+	if err != nil {
+		return err
+	}
+
+	_, err = pool.Exec(ctx, fmt.Sprintf(`
+		create table if not exists "%s" (
+			id serial PRIMARY KEY,
+			name text unique not null
+		)
+	`, countriesTable))
 	if err != nil {
 		return err
 	}
