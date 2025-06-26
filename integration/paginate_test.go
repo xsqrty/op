@@ -66,7 +66,7 @@ func TestPaginate(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
-	assert.Equal(t, int64(deletedCount), res.TotalRows)
+	assert.Equal(t, uint64(deletedCount), res.TotalRows)
 
 	if res.TotalRows > 0 {
 		for _, row := range res.Rows {

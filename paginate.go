@@ -12,10 +12,10 @@ type Paginator[T any] interface {
 	With(ctx context.Context, db Queryable) (*PaginateResult[T], error)
 	WhiteList(whitelist ...string) Paginator[T]
 	Fields(fields ...Alias) Paginator[T]
-	MaxFilterDepth(depth int64) Paginator[T]
-	MaxSliceLen(maxLen int64) Paginator[T]
-	MaxLimit(limit int64) Paginator[T]
-	MinLimit(limit int64) Paginator[T]
+	MaxFilterDepth(depth uint64) Paginator[T]
+	MaxSliceLen(maxLen uint64) Paginator[T]
+	MaxLimit(limit uint64) Paginator[T]
+	MinLimit(limit uint64) Paginator[T]
 	Where(exp driver.Sqler) Paginator[T]
 	Join(table any, on driver.Sqler) Paginator[T]
 	LeftJoin(table any, on driver.Sqler) Paginator[T]
@@ -26,15 +26,15 @@ type Paginator[T any] interface {
 }
 
 type PaginateResult[T any] struct {
-	TotalRows int64
+	TotalRows uint64
 	Rows      []*T
 }
 
 type PaginateRequest struct {
 	Orders  []PaginateOrder `json:"orders,omitempty"`
 	Filters PaginateFilters `json:"filters,omitempty"`
-	Limit   int64           `json:"limit,omitempty"`
-	Offset  int64           `json:"offset,omitempty"`
+	Limit   uint64          `json:"limit,omitempty"`
+	Offset  uint64          `json:"offset,omitempty"`
 }
 
 type PaginateFilters map[string]any
@@ -51,10 +51,10 @@ type paginate[T any] struct {
 	rowsSb      SelectBuilder
 	rowsSbWrap  SelectBuilder
 	countSbWrap SelectBuilder
-	minLimit    int64
-	maxLimit    int64
-	maxDepth    int64
-	maxSliceLen int64
+	minLimit    uint64
+	maxLimit    uint64
+	maxDepth    uint64
+	maxSliceLen uint64
 }
 
 const (
@@ -81,10 +81,10 @@ var (
 )
 
 const (
-	defaultMinLimit    = 1
-	defaultMaxLimit    = math.MaxInt64
-	defaultFilterDepth = 5
-	defaultMaxSliceLen = 10
+	defaultMinLimit    = uint64(1)
+	defaultMaxLimit    = math.MaxUint64
+	defaultFilterDepth = uint64(5)
+	defaultMaxSliceLen = uint64(10)
 )
 
 func Paginate[T any](table string, request *PaginateRequest) Paginator[T] {
@@ -140,7 +140,7 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 		return nil, err
 	}
 
-	var totalCount int64
+	var totalCount uint64
 	sql, args, err := db.Sql(pg.countSbWrap.From(As("result", pg.rowsSb)))
 	if err != nil {
 		return nil, err
@@ -167,22 +167,22 @@ func (pg *paginate[T]) Fields(fields ...Alias) Paginator[T] {
 	return pg
 }
 
-func (pg *paginate[T]) MaxFilterDepth(depth int64) Paginator[T] {
+func (pg *paginate[T]) MaxFilterDepth(depth uint64) Paginator[T] {
 	pg.maxDepth = depth
 	return pg
 }
 
-func (pg *paginate[T]) MaxSliceLen(maxLen int64) Paginator[T] {
+func (pg *paginate[T]) MaxSliceLen(maxLen uint64) Paginator[T] {
 	pg.maxSliceLen = maxLen
 	return pg
 }
 
-func (pg *paginate[T]) MaxLimit(limit int64) Paginator[T] {
+func (pg *paginate[T]) MaxLimit(limit uint64) Paginator[T] {
 	pg.maxLimit = limit
 	return pg
 }
 
-func (pg *paginate[T]) MinLimit(limit int64) Paginator[T] {
+func (pg *paginate[T]) MinLimit(limit uint64) Paginator[T] {
 	pg.minLimit = limit
 	return pg
 }
@@ -249,7 +249,7 @@ func (pg *paginate[T]) isAllowedKey(key string) bool {
 	return false
 }
 
-func (pg *paginate[T]) parseFilters(filters PaginateFilters, depth int64) (And, error) {
+func (pg *paginate[T]) parseFilters(filters PaginateFilters, depth uint64) (And, error) {
 	if filters == nil {
 		return nil, nil
 	}

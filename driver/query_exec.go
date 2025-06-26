@@ -13,7 +13,7 @@ type QueryExec interface {
 }
 
 type ExecResult interface {
-	RowsAffected() int64
+	RowsAffected() uint64
 }
 
 type Scanner interface {

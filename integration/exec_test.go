@@ -17,7 +17,7 @@ func TestExec(t *testing.T) {
 
 	count, err := op.CountOf(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, qe)
 	assert.NoError(t, err)
-	assert.Greater(t, count, int64(0))
+	assert.Greater(t, count, uint64(0))
 
 	event, err := op.Exec(op.Delete(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, qe)
 	assert.NoError(t, err)
@@ -25,5 +25,5 @@ func TestExec(t *testing.T) {
 
 	count, err = op.CountOf(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, qe)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(0), count)
+	assert.Equal(t, uint64(0), count)
 }

@@ -38,7 +38,7 @@ func TestGetMany(t *testing.T) {
 func TestGetOne(t *testing.T) {
 	query := testutil.NewMockQueryable()
 	query.
-		On("QueryRow", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" WHERE "users"."id" = ? LIMIT ?`, []any{100, int64(1)}).
+		On("QueryRow", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" WHERE "users"."id" = ? LIMIT ?`, []any{100, uint64(1)}).
 		Return(testutil.NewMockRow(nil, []any{100, "Bob"}))
 
 	user, err := Query[QueryMockUser](Select().From("users").Where(Eq("users.id", 100))).GetOne(context.Background(), query)
@@ -51,7 +51,7 @@ func TestGetOne(t *testing.T) {
 func TestGetOneError(t *testing.T) {
 	query := testutil.NewMockQueryable()
 	query.
-		On("QueryRow", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" LIMIT ?`, []any{int64(1)}).
+		On("QueryRow", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" LIMIT ?`, []any{uint64(1)}).
 		Return(testutil.NewMockRow(errors.New("sql syntax error"), nil))
 
 	user, err := Query[QueryMockUser](Select().From("users")).GetOne(context.Background(), query)

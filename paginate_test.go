@@ -20,13 +20,13 @@ type PaginateMockUser struct {
 func TestPaginate(t *testing.T) {
 	query := testutil.NewMockQueryable()
 	query.
-		On("Query", mock.Anything, `SELECT * FROM (SELECT ("users"."id") AS "user_id",("users"."age") AS "user_age",("users"."name") AS "user_name",("companies"."name") AS "company_name" FROM "users" LEFT JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "companies"."id" = ? GROUP BY "users"."id","companies"."name") AS "result" WHERE ("age" = ? OR "age" = ? OR "id" IN (?,?,?)) ORDER BY "id" DESC LIMIT ?`, []any{111, float64(25), float64(26), float64(1), float64(2), float64(3), int64(5)}).
+		On("Query", mock.Anything, `SELECT * FROM (SELECT ("users"."id") AS "user_id",("users"."age") AS "user_age",("users"."name") AS "user_name",("companies"."name") AS "company_name" FROM "users" LEFT JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "companies"."id" = ? GROUP BY "users"."id","companies"."name") AS "result" WHERE ("age" = ? OR "age" = ? OR "id" IN (?,?,?)) ORDER BY "id" DESC LIMIT ?`, []any{111, float64(25), float64(26), float64(1), float64(2), float64(3), uint64(5)}).
 		Return(testutil.NewMockRows(nil, []driver.Scanner{
 			testutil.NewMockRow(nil, []any{1, 25, "Alex", "Company 1"}),
 			testutil.NewMockRow(nil, []any{2, 26, "John", "Company 2"}),
 		}), nil)
 
-	query.On("QueryRow", mock.Anything, `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."id") AS "user_id",("users"."age") AS "user_age",("users"."name") AS "user_name",("companies"."name") AS "company_name" FROM "users" LEFT JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "companies"."id" = ? GROUP BY "users"."id","companies"."name") AS "result" WHERE ("age" = ? OR "age" = ? OR "id" IN (?,?,?))`, []any{111, float64(25), float64(26), float64(1), float64(2), float64(3)}).Return(testutil.NewMockRow(nil, []any{int64(2)}))
+	query.On("QueryRow", mock.Anything, `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."id") AS "user_id",("users"."age") AS "user_age",("users"."name") AS "user_name",("companies"."name") AS "company_name" FROM "users" LEFT JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "companies"."id" = ? GROUP BY "users"."id","companies"."name") AS "result" WHERE ("age" = ? OR "age" = ? OR "id" IN (?,?,?))`, []any{111, float64(25), float64(26), float64(1), float64(2), float64(3)}).Return(testutil.NewMockRow(nil, []any{uint64(2)}))
 
 	reqString := `{
 			"limit": 10,
@@ -63,7 +63,7 @@ func TestPaginate(t *testing.T) {
 		With(context.Background(), query)
 
 	assert.NoError(t, err)
-	assert.Equal(t, int64(2), res.TotalRows)
+	assert.Equal(t, uint64(2), res.TotalRows)
 
 	assert.Equal(t, 1, res.Rows[0].ID)
 	assert.Equal(t, 25, res.Rows[0].Age)

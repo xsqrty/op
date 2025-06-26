@@ -106,6 +106,6 @@ func (d *postgresDriverRows) Err() error {
 	return d.err
 }
 
-func (d *postgresExecResult) RowsAffected() int64 {
-	return d.commonTags.RowsAffected()
+func (d *postgresExecResult) RowsAffected() uint64 {
+	return uint64(d.commonTags.RowsAffected())
 }

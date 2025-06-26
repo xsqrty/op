@@ -11,14 +11,14 @@ type mockExecutor struct {
 }
 
 type mockExecResult struct {
-	count int64
+	count uint64
 }
 
 func NewMockExecutor() *mockExecutor {
 	return &mockExecutor{}
 }
 
-func NewMockExecResult(count int64) *mockExecResult {
+func NewMockExecResult(count uint64) *mockExecResult {
 	return &mockExecResult{count: count}
 }
 
@@ -31,6 +31,6 @@ func (m *mockExecutor) Sql(sqler driver.Sqler) (string, []any, error) {
 	return driver.Sql(sqler, NewDefaultOptions())
 }
 
-func (er *mockExecResult) RowsAffected() int64 {
+func (er *mockExecResult) RowsAffected() uint64 {
 	return er.count
 }

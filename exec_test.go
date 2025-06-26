@@ -23,7 +23,7 @@ func TestExec(t *testing.T) {
 	})).With(context.Background(), executor)
 
 	assert.NoError(t, err)
-	assert.Equal(t, int64(100), res.RowsAffected())
+	assert.Equal(t, uint64(100), res.RowsAffected())
 }
 
 func TestExecError(t *testing.T) {

@@ -121,7 +121,7 @@ func TestQueryUpdate(t *testing.T) {
 
 	deletedCount, err := op.CountOf(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, qe)
 	assert.NoError(t, err)
-	assert.Greater(t, deletedCount, int64(0))
+	assert.Greater(t, deletedCount, uint64(0))
 
 	_, err = op.Query[MockUser](op.Update(usersTable, op.Updates{
 		"deleted_at": nil,
@@ -130,5 +130,5 @@ func TestQueryUpdate(t *testing.T) {
 
 	newDeletedCount, err := op.CountOf(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, qe)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(0), newDeletedCount)
+	assert.Equal(t, uint64(0), newDeletedCount)
 }
