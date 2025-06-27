@@ -2,7 +2,7 @@ package op
 
 import (
 	"github.com/xsqrty/op/driver"
-	"github.com/xsqrty/op/testutil"
+	"github.com/xsqrty/op/internal/testutil"
 	"testing"
 )
 
