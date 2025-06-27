@@ -2,10 +2,10 @@ package driver
 
 import (
 	"context"
-	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"iter"
+	"strconv"
 )
 
 type PostgresQueryExec interface {
@@ -43,10 +43,10 @@ func NewPostgresSqlOptions() *SqlOptions {
 		WithWrapColumn('"', '"'),
 		WithWrapAlias('"', '"'),
 		WithCastFormat(func(val string, typ string) string {
-			return fmt.Sprintf("%s::%s", val, typ)
+			return val + "::" + typ
 		}),
 		WithPlaceholderFormat(func(n int) string {
-			return fmt.Sprintf("$%d", n)
+			return "$" + strconv.Itoa(n)
 		}),
 	)
 }

@@ -233,7 +233,7 @@ func (sb *selectBuilder) Sql(options *driver.SqlOptions) (sql string, args []any
 
 	if len(sb.joins) > 0 {
 		for i := range sb.joins {
-			buf.WriteString(fmt.Sprintf(" %s ", sb.joins[i].joinType.String()))
+			buf.WriteString(" " + sb.joins[i].joinType.String() + " ")
 			sql, tableArgs, err := sb.joins[i].table.Sql(options)
 			if err != nil {
 				return "", nil, err

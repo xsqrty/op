@@ -91,7 +91,7 @@ func (f fun) Sql(options *driver.SqlOptions) (string, []any, error) {
 		prefix = f.prefix + " "
 	}
 
-	return fmt.Sprintf("%s(%s%s)", f.name, prefix, sql), args, nil
+	return f.name + "(" + prefix + sql + ")", args, nil
 }
 
 func (c cast) Sql(options *driver.SqlOptions) (string, []any, error) {

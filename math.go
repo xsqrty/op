@@ -1,7 +1,6 @@
 package op
 
 import (
-	"fmt"
 	"github.com/xsqrty/op/driver"
 )
 
@@ -28,5 +27,5 @@ func Mul(args ...any) driver.Sqler {
 
 func (m *mathOperator) Sql(options *driver.SqlOptions) (string, []any, error) {
 	sql, args, err := joinList(m.operator, m.args, true, options)
-	return fmt.Sprintf("(%s)", sql), args, err
+	return "(" + sql + ")", args, err
 }
