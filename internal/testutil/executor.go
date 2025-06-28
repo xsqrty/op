@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"github.com/stretchr/testify/mock"
+	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/driver"
 )
 
@@ -11,26 +12,31 @@ type mockExecutor struct {
 }
 
 type mockExecResult struct {
-	count uint64
+	count  int64
+	lastId int64
 }
 
 func NewMockExecutor() *mockExecutor {
 	return &mockExecutor{}
 }
 
-func NewMockExecResult(count uint64) *mockExecResult {
-	return &mockExecResult{count: count}
+func NewMockExecResult(count, lastId int64) *mockExecResult {
+	return &mockExecResult{count: count, lastId: lastId}
 }
 
-func (m *mockExecutor) Exec(ctx context.Context, sql string, args ...any) (driver.ExecResult, error) {
+func (m *mockExecutor) Exec(ctx context.Context, sql string, args ...any) (db.ExecResult, error) {
 	mockArgs := m.Called(ctx, sql, args)
-	return mockArgs.Get(0).(driver.ExecResult), mockArgs.Error(1)
+	return mockArgs.Get(0).(db.ExecResult), mockArgs.Error(1)
 }
 
 func (m *mockExecutor) Sql(sqler driver.Sqler) (string, []any, error) {
 	return driver.Sql(sqler, NewDefaultOptions())
 }
 
-func (er *mockExecResult) RowsAffected() uint64 {
-	return er.count
+func (er *mockExecResult) RowsAffected() (int64, error) {
+	return er.count, nil
+}
+
+func (er *mockExecResult) LastInsertId() (int64, error) {
+	return er.lastId, nil
 }

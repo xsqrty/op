@@ -23,6 +23,9 @@ jobs:
       - name: Run tests
         run: go test -v -timeout 10m -race -covermode atomic -coverprofile=coverage.out -coverpkg=github.com/xsqrty/op/... ./...
 
+      - name: Display total coverage
+        run: echo Total coverage $(go tool cover -func=coverage.out | tail -n 1 | awk '{print $3}')
+
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
         with:

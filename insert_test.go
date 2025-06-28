@@ -30,7 +30,7 @@ func TestInsert(t *testing.T) {
 		},
 		{
 			Name:         "insert_returning_alias",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").Returning(columnAlias("id")),
+			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").Returning(ColumnAlias("id")),
 			ExpectedSql:  `INSERT INTO "users" ("age","name") VALUES (?,?) RETURNING "id"`,
 			ExpectedArgs: []any{10, "Alex"},
 		},
@@ -42,7 +42,7 @@ func TestInsert(t *testing.T) {
 		},
 		{
 			Name:         "insert_conflict_alias",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").Returning("id").OnConflict(columnAlias("id"), DoNothing()),
+			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").Returning("id").OnConflict(ColumnAlias("id"), DoNothing()),
 			ExpectedSql:  `INSERT INTO "users" ("age","name") VALUES (?,?) ON CONFLICT ("id") DO NOTHING RETURNING "id"`,
 			ExpectedArgs: []any{10, "Alex"},
 		},
@@ -76,7 +76,7 @@ func TestInsert(t *testing.T) {
 		},
 		{
 			Name:         "insert_error_5",
-			Builder:      Insert(columnAlias("users+users"), Inserting{"age": 10}),
+			Builder:      Insert(ColumnAlias("users+users"), Inserting{"age": 10}),
 			ExpectedSql:  "",
 			ExpectedArgs: []any(nil),
 			ExpectedErr:  "target \"users+users\" contains illegal character '+'",
@@ -123,6 +123,20 @@ func TestInsert(t *testing.T) {
 			ExpectedArgs: []any(nil),
 			ExpectedErr:  "unknown type: int must be a string or Alias",
 		},
+		{
+			Name:         "insert_error_12",
+			Builder:      Insert("users", Inserting{"a": 10}).Values(10),
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  "Values/Columns available only for InsertMany",
+		},
+		{
+			Name:         "insert_error_13",
+			Builder:      Insert("users", Inserting{"a": 10}).Columns("a"),
+			ExpectedSql:  "",
+			ExpectedArgs: []any(nil),
+			ExpectedErr:  "Values/Columns available only for InsertMany",
+		},
 	})
 }
 
@@ -138,11 +152,11 @@ func TestInsertReturning(t *testing.T) {
 	item := Insert("users", Inserting{}).Returning("id")
 	item.LimitReturningOne()
 
-	assert.Equal(t, []Alias{columnAlias("id")}, item.GetReturning())
+	assert.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
 
 	item.SetReturning([]any{"id", "age"})
-	assert.Equal(t, []Alias{columnAlias("id"), columnAlias("age")}, item.GetReturning())
+	assert.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
 
-	item.SetReturningAliases([]Alias{columnAlias("col2")})
-	assert.Equal(t, []Alias{columnAlias("col2")}, item.GetReturning())
+	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
+	assert.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
 }

@@ -34,7 +34,7 @@ func Update(table any, updates Updates) UpdateBuilder {
 	if table != nil {
 		switch val := table.(type) {
 		case string:
-			ub.table = columnAlias(Column(val))
+			ub.table = ColumnAlias(Column(val))
 		case Alias:
 			ub.table = val
 		default:
@@ -149,7 +149,7 @@ func (ub *updateBuilder) setReturning(keys []any) error {
 	for i := range keys {
 		switch val := keys[i].(type) {
 		case string:
-			ub.returningKeys = append(ub.returningKeys, columnAlias(Column(val)))
+			ub.returningKeys = append(ub.returningKeys, ColumnAlias(Column(val)))
 		case Alias:
 			ub.returningKeys = append(ub.returningKeys, val)
 		default:

@@ -1,4 +1,4 @@
-package op
+package orm
 
 import (
 	"fmt"
@@ -150,5 +150,5 @@ func TestGetSettersKeysByFields(t *testing.T) {
 	details, _ = getModelDetails(table, model)
 	pointers, err = getPointersByModelSetters(model, details.setters, []string{"undefined"})
 	assert.Nil(t, pointers)
-	assert.EqualError(t, err, `key "undefined" is not described in *op.MockModel`)
+	assert.EqualError(t, err, `key "undefined" is not described in *orm.MockModel`)
 }

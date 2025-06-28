@@ -29,7 +29,7 @@ func Delete(table any) DeleteBuilder {
 	db := &deleteBuilder{}
 	switch val := table.(type) {
 	case string:
-		db.table = columnAlias(Column(val))
+		db.table = ColumnAlias(Column(val))
 	case Alias:
 		db.table = val
 	default:
@@ -126,7 +126,7 @@ func (db *deleteBuilder) setReturning(keys []any) error {
 	for _, field := range keys {
 		switch val := field.(type) {
 		case string:
-			db.returningKeys = append(db.returningKeys, columnAlias(Column(val)))
+			db.returningKeys = append(db.returningKeys, ColumnAlias(Column(val)))
 		case Alias:
 			db.returningKeys = append(db.returningKeys, val)
 		default:

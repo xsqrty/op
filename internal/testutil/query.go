@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"github.com/stretchr/testify/mock"
+	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/driver"
 	"iter"
 	"reflect"
@@ -14,7 +15,7 @@ type mockQueryable struct {
 
 type mockRows struct {
 	mock.Mock
-	rows []driver.Scanner
+	rows []db.Scanner
 	err  error
 }
 
@@ -23,7 +24,7 @@ type mockRow struct {
 	err error
 }
 
-func NewMockRows(err error, rows []driver.Scanner) *mockRows {
+func NewMockRows(err error, rows []db.Scanner) *mockRows {
 	return &mockRows{
 		err:  err,
 		rows: rows,
@@ -41,22 +42,22 @@ func NewMockQueryable() *mockQueryable {
 	return &mockQueryable{}
 }
 
-func (m *mockQueryable) Query(ctx context.Context, sql string, args ...any) (driver.Rows, error) {
+func (m *mockQueryable) Query(ctx context.Context, sql string, args ...any) (db.Rows, error) {
 	mockArgs := m.Called(ctx, sql, args)
-	return mockArgs.Get(0).(driver.Rows), mockArgs.Error(1)
+	return mockArgs.Get(0).(db.Rows), mockArgs.Error(1)
 }
 
-func (m *mockQueryable) QueryRow(ctx context.Context, sql string, args ...any) driver.Row {
+func (m *mockQueryable) QueryRow(ctx context.Context, sql string, args ...any) db.Row {
 	mockArgs := m.Called(ctx, sql, args)
-	return mockArgs.Get(0).(driver.Row)
+	return mockArgs.Get(0).(db.Row)
 }
 
 func (m *mockQueryable) Sql(sqler driver.Sqler) (string, []any, error) {
 	return driver.Sql(sqler, NewDefaultOptions())
 }
 
-func (mr *mockRows) Rows() iter.Seq2[int, driver.Scanner] {
-	return func(yield func(int, driver.Scanner) bool) {
+func (mr *mockRows) Rows() iter.Seq2[int, db.Scanner] {
+	return func(yield func(int, db.Scanner) bool) {
 		for i, _ := range mr.rows {
 			if !yield(i, mr.rows[i]) {
 				break

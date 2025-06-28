@@ -30,7 +30,7 @@ func TestSelect(t *testing.T) {
 		},
 		{
 			Name:         "select_alias",
-			Builder:      Select().From(columnAlias("users")),
+			Builder:      Select().From(ColumnAlias("users")),
 			ExpectedSql:  `SELECT * FROM "users"`,
 			ExpectedArgs: []any(nil),
 		},
@@ -48,7 +48,7 @@ func TestSelect(t *testing.T) {
 		},
 		{
 			Name:         "left_join",
-			Builder:      Select("id", "name").From("users").LeftJoin(columnAlias("roles"), Eq("user_id", Column("users.id"))),
+			Builder:      Select("id", "name").From("users").LeftJoin(ColumnAlias("roles"), Eq("user_id", Column("users.id"))),
 			ExpectedSql:  `SELECT "id","name" FROM "users" LEFT JOIN "roles" ON "user_id" = "users"."id"`,
 			ExpectedArgs: []any(nil),
 		},
@@ -93,7 +93,7 @@ func TestSelect(t *testing.T) {
 		},
 		{
 			Name:         "group_by",
-			Builder:      Select("id", columnAlias("name")).From("users").GroupBy("category", Column("id")),
+			Builder:      Select("id", ColumnAlias("name")).From("users").GroupBy("category", Column("id")),
 			ExpectedSql:  `SELECT "id","name" FROM "users" GROUP BY "category","id"`,
 			ExpectedArgs: []any(nil),
 		},
@@ -226,13 +226,13 @@ func TestSelectReturning(t *testing.T) {
 	item := Select("id").From("users")
 	item.LimitReturningOne()
 
-	assert.Equal(t, []Alias{columnAlias("id")}, item.GetReturning())
+	assert.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
 
 	item.SetReturning([]any{"id", "age"})
-	assert.Equal(t, []Alias{columnAlias("id"), columnAlias("age")}, item.GetReturning())
+	assert.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
 
-	item.SetReturningAliases([]Alias{columnAlias("col2")})
-	assert.Equal(t, []Alias{columnAlias("col2")}, item.GetReturning())
+	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
+	assert.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
 }
 
 func TestOrder(t *testing.T) {

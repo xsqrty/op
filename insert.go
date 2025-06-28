@@ -25,6 +25,7 @@ type Inserting map[string]any
 
 type insertBuilder struct {
 	into          Alias
+	many          bool
 	onConflict    *conflict
 	returningKeys []Alias
 	insertingKeys []Column
@@ -34,10 +35,11 @@ type insertBuilder struct {
 
 var (
 	ErrNoInsertValues = errors.New("no insert values")
+	ErrForInsertMany  = errors.New("Values/Columns available only for InsertMany")
 )
 
 func InsertMany(into any) InsertBuilder {
-	ib := &insertBuilder{}
+	ib := &insertBuilder{many: true}
 	ib.setInto(into)
 
 	return ib
@@ -52,6 +54,11 @@ func Insert(into any, inserting Inserting) InsertBuilder {
 }
 
 func (ib *insertBuilder) Columns(columns ...string) InsertBuilder {
+	if !ib.many {
+		ib.err = ErrForInsertMany
+		return ib
+	}
+
 	ib.insertingKeys = make([]Column, len(columns))
 	for i, col := range columns {
 		ib.insertingKeys[i] = Column(col)
@@ -61,6 +68,11 @@ func (ib *insertBuilder) Columns(columns ...string) InsertBuilder {
 }
 
 func (ib *insertBuilder) Values(values ...any) InsertBuilder {
+	if !ib.many {
+		ib.err = ErrForInsertMany
+		return ib
+	}
+
 	ib.insertingVals = append(ib.insertingVals, values)
 	return ib
 }
@@ -69,7 +81,7 @@ func (ib *insertBuilder) OnConflict(target any, do driver.Sqler) InsertBuilder {
 	conf := &conflict{expr: do}
 	switch val := target.(type) {
 	case string:
-		conf.target = columnAlias(Column(val))
+		conf.target = ColumnAlias(Column(val))
 	case Alias:
 		conf.target = val
 	default:
@@ -203,7 +215,7 @@ func (ib *insertBuilder) setReturning(keys []any) error {
 	for _, field := range keys {
 		switch val := field.(type) {
 		case string:
-			ib.returningKeys = append(ib.returningKeys, columnAlias(Column(val)))
+			ib.returningKeys = append(ib.returningKeys, ColumnAlias(Column(val)))
 		case Alias:
 			ib.returningKeys = append(ib.returningKeys, val)
 		default:
@@ -230,7 +242,7 @@ func (ib *insertBuilder) setInserting(inserting Inserting) {
 func (ib *insertBuilder) setInto(into any) {
 	switch val := into.(type) {
 	case string:
-		ib.into = columnAlias(Column(val))
+		ib.into = ColumnAlias(Column(val))
 	case Alias:
 		ib.into = val
 	default:

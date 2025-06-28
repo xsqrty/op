@@ -16,13 +16,13 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			Name:         "delete_returning",
-			Builder:      Delete("users").Where(Ne("Id", 1)).Returning("Id", columnAlias("Name")),
+			Builder:      Delete("users").Where(Ne("Id", 1)).Returning("Id", ColumnAlias("Name")),
 			ExpectedSql:  `DELETE FROM "users" WHERE "Id" != ? RETURNING "Id","Name"`,
 			ExpectedArgs: []any{1},
 		},
 		{
 			Name:         "delete_alias",
-			Builder:      Delete(columnAlias("users")).Where(Ne("Id", 1)).Returning("Id", "Name"),
+			Builder:      Delete(ColumnAlias("users")).Where(Ne("Id", 1)).Returning("Id", "Name"),
 			ExpectedSql:  `DELETE FROM "users" WHERE "Id" != ? RETURNING "Id","Name"`,
 			ExpectedArgs: []any{1},
 		},
@@ -76,11 +76,11 @@ func TestDeleteReturning(t *testing.T) {
 	item := Delete("users").Returning("id")
 	item.LimitReturningOne()
 
-	assert.Equal(t, []Alias{columnAlias("id")}, item.GetReturning())
+	assert.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
 
 	item.SetReturning([]any{"id", "age"})
-	assert.Equal(t, []Alias{columnAlias("id"), columnAlias("age")}, item.GetReturning())
+	assert.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
 
-	item.SetReturningAliases([]Alias{columnAlias("col2")})
-	assert.Equal(t, []Alias{columnAlias("col2")}, item.GetReturning())
+	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
+	assert.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
 }

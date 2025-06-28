@@ -103,7 +103,7 @@ func (a *alias) Sql(options *driver.SqlOptions) (string, []any, error) {
 	return sql, args, nil
 }
 
-func columnAlias(col Column) Alias {
+func ColumnAlias(col Column) Alias {
 	return &alias{isPureColumn: true, expr: col, name: string(col)}
 }
 

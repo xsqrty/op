@@ -30,11 +30,11 @@ func TestColumn(t *testing.T) {
 	})
 
 	assert.True(t, Column("").IsZero())
-	assert.True(t, columnAlias("col").IsPureColumn())
+	assert.True(t, ColumnAlias("col").IsPureColumn())
 }
 
 func TestAlias(t *testing.T) {
-	al := columnAlias("target")
+	al := ColumnAlias("target")
 	al.Rename("table.target")
 
 	al2 := As("name", Column("target"))
@@ -55,7 +55,7 @@ func TestAlias(t *testing.T) {
 		},
 		{
 			Name:         "alias_for_column",
-			Builder:      columnAlias("Users.Name"),
+			Builder:      ColumnAlias("Users.Name"),
 			ExpectedSql:  `"Users"."Name"`,
 			ExpectedArgs: []any(nil),
 		},

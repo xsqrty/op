@@ -1,4 +1,4 @@
-package op
+package orm
 
 import (
 	"context"
@@ -14,9 +14,12 @@ type PutMockUser struct {
 }
 
 func TestPut(t *testing.T) {
+	expectedSql := `INSERT INTO "users" ("name") VALUES (?) ON CONFLICT ("id") DO UPDATE SET "name"=EXCLUDED."name" RETURNING "users"."id","users"."name"`
+	expectedArgs := []any{"Alex"}
+
 	query := testutil.NewMockQueryable()
 	query.
-		On("QueryRow", mock.Anything, `INSERT INTO "users" ("name") VALUES (?) ON CONFLICT ("id") DO UPDATE SET "name"=EXCLUDED."name" RETURNING "users"."id","users"."name"`, []any{"Alex"}).
+		On("QueryRow", mock.Anything, expectedSql, expectedArgs).
 		Return(testutil.NewMockRow(nil, []any{100, "Bob"}))
 
 	user := &PutMockUser{
@@ -24,7 +27,11 @@ func TestPut(t *testing.T) {
 	}
 
 	assert.Equal(t, 0, user.ID)
-	err := Put[PutMockUser]("users", user).With(context.Background(), query)
+	err := Put[PutMockUser]("users", user).Log(func(sql string, args []any, err error) {
+		assert.NoError(t, err)
+		assert.Equal(t, expectedArgs, args)
+		assert.Equal(t, expectedSql, sql)
+	}).With(context.Background(), query)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 100, user.ID)
