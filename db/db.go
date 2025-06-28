@@ -15,10 +15,8 @@ type ConnPool interface {
 	Transacter
 }
 
-type TransactHandler func(ctx context.Context) error
-
 type Transacter interface {
-	Transact(ctx context.Context, handler TransactHandler) error
+	Transact(ctx context.Context, handler func(ctx context.Context) error) error
 }
 
 type stdDb interface {
@@ -62,7 +60,7 @@ func (cp *connPool) QueryRow(ctx context.Context, sql string, args ...any) Row {
 	return cp.get(ctx).QueryRowContext(ctx, sql, args...)
 }
 
-func (cp *connPool) Transact(ctx context.Context, handler TransactHandler) (err error) {
+func (cp *connPool) Transact(ctx context.Context, handler func(ctx context.Context) error) (err error) {
 	tx, err := cp.stdDb.BeginTx(ctx, txOptions)
 	if err != nil {
 		return err

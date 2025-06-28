@@ -154,7 +154,7 @@ func DataSeed(ctx context.Context, qe db.QueryExec) error {
 	return nil
 }
 
-func Transact(t *testing.T, ctx context.Context, conn db.ConnPool, handler db.TransactHandler) error {
+func Transact(t *testing.T, ctx context.Context, conn db.ConnPool, handler func(ctx context.Context) error) error {
 	t.Helper()
 	return conn.Transact(ctx, handler)
 }

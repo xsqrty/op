@@ -64,7 +64,7 @@ func (pa *pgxAdapter) QueryRow(ctx context.Context, sql string, args ...any) Row
 	return pa.get(ctx).QueryRow(ctx, sql, args...)
 }
 
-func (pa *pgxAdapter) Transact(ctx context.Context, handler TransactHandler) (err error) {
+func (pa *pgxAdapter) Transact(ctx context.Context, handler func(ctx context.Context) error) (err error) {
 	tx, err := pa.pool.BeginTx(ctx, pgxTxOptions)
 	if err != nil {
 		return err
