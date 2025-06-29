@@ -1,8 +1,8 @@
 package op
 
 import (
-	"bytes"
 	"github.com/xsqrty/op/driver"
+	"strings"
 )
 
 type Cases interface {
@@ -39,7 +39,7 @@ func (cs cases) Else(elseCase driver.Sqler) driver.Sqler {
 
 func (cw *caseWhen) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
 	var args []any
-	var buf bytes.Buffer
+	var buf strings.Builder
 
 	buf.WriteString("CASE")
 	for _, item := range cw.cases {

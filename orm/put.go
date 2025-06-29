@@ -31,6 +31,10 @@ func (p *put[T]) With(ctx context.Context, db Queryable) error {
 		return err
 	}
 
+	if md.primaryAsTag == "" {
+		return fmt.Errorf("no primary key for model %s", p.table)
+	}
+
 	fields, ok := md.tags[p.table]
 	if !ok {
 		return fmt.Errorf("no such target for model %s", p.table)
@@ -60,10 +64,6 @@ func (p *put[T]) With(ctx context.Context, db Queryable) error {
 	aliases := make([]op.Alias, len(fields))
 	for i := range fields {
 		aliases[i] = op.ColumnAlias(op.Column(fields[i]))
-	}
-
-	if md.primaryAsTag == "" {
-		return fmt.Errorf("no primary key for model %s", p.table)
 	}
 
 	insert := op.Insert(p.table, inserting).OnConflict(md.primaryAsTag, op.DoUpdate(updates))

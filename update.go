@@ -1,9 +1,9 @@
 package op
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/xsqrty/op/driver"
+	"strings"
 )
 
 type UpdateBuilder interface {
@@ -73,7 +73,7 @@ func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 		return "", nil, fmt.Errorf("update: %w", ErrFieldsEmpty)
 	}
 
-	var buf bytes.Buffer
+	var buf strings.Builder
 	var args []interface{}
 
 	buf.WriteString("UPDATE ")

@@ -1,9 +1,9 @@
 package op
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/xsqrty/op/driver"
+	"strings"
 )
 
 type SelectBuilder interface {
@@ -200,7 +200,7 @@ func (sb *selectBuilder) Sql(options *driver.SqlOptions) (sql string, args []any
 		return
 	}
 
-	var buf bytes.Buffer
+	var buf strings.Builder
 	buf.WriteString("SELECT")
 	if sb.fieldsPrefix != "" {
 		buf.WriteByte(' ')

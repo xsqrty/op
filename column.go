@@ -1,9 +1,9 @@
 package op
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/xsqrty/op/driver"
+	"strings"
 )
 
 type Column string
@@ -28,7 +28,7 @@ func As(name string, expr driver.Sqler) Alias {
 }
 
 func (c Column) Sql(options *driver.SqlOptions) (string, []any, error) {
-	var buf bytes.Buffer
+	var buf strings.Builder
 	val := []byte(c)
 	if options.IsWrapColumn {
 		buf.WriteByte(options.WrapColumnBegin)
@@ -108,7 +108,7 @@ func ColumnAlias(col Column) Alias {
 }
 
 func wrapAlias(al *alias, options *driver.SqlOptions) (string, []any, error) {
-	var buf bytes.Buffer
+	var buf strings.Builder
 	if options.IsWrapAlias {
 		buf.WriteByte(options.WrapAliasBegin)
 	}

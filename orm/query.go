@@ -101,11 +101,6 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 
 	for _, row := range rows.Rows() {
 		item := new(T)
-		md, err = getModelDetails(q.with, item)
-		if err != nil {
-			return nil, err
-		}
-
 		pointers, err := getPointersByModelSetters(item, md.setters, keys)
 		if err != nil {
 			return nil, err

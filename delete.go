@@ -1,9 +1,9 @@
 package op
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/xsqrty/op/driver"
+	"strings"
 )
 
 type DeleteBuilder interface {
@@ -62,7 +62,7 @@ func (db *deleteBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 		return "", nil, db.err
 	}
 
-	var buf bytes.Buffer
+	var buf strings.Builder
 	var args []interface{}
 
 	buf.WriteString("DELETE FROM ")

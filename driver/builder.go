@@ -1,7 +1,7 @@
 package driver
 
 import (
-	"bytes"
+	"strings"
 )
 
 const (
@@ -91,7 +91,7 @@ func Sql(b Sqler, options *SqlOptions) (string, []any, error) {
 	}
 
 	if options.PlaceholderFormat != nil {
-		var buf bytes.Buffer
+		var buf strings.Builder
 
 		pos := 0
 		index := 1

@@ -2,6 +2,7 @@ package orm
 
 import (
 	"fmt"
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -133,9 +134,13 @@ func TestGetSettersKeysByFields(t *testing.T) {
 	}, pointers)
 
 	now := time.Now()
+	name := gofakeit.Name()
+
 	*(pointers[2].(*time.Time)) = now
+	*(pointers[4].(*string)) = name
 
 	assert.Equal(t, now.Unix(), model.Date.Unix())
+	assert.Equal(t, name, model.Company.Name)
 
 	var mp *MockModel
 	pointers, err = getPointersByModelSetters(mp, details.setters, []string{"users.id", "users.name"})

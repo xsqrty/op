@@ -1,8 +1,8 @@
 package op
 
 import (
-	"bytes"
 	"github.com/xsqrty/op/driver"
+	"strings"
 )
 
 const (
@@ -23,7 +23,7 @@ func (l Or) Sql(options *driver.SqlOptions) (string, []any, error) {
 }
 
 func buildConcat(joiner string, l []driver.Sqler, options *driver.SqlOptions) (string, []any, error) {
-	var buf bytes.Buffer
+	var buf strings.Builder
 	var resultArgs []any
 	wrap := len(l) > 1
 

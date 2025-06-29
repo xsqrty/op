@@ -1,8 +1,8 @@
 package op
 
 import (
-	"bytes"
 	"github.com/xsqrty/op/driver"
+	"strings"
 )
 
 type list []any
@@ -13,7 +13,7 @@ func (l list) Sql(options *driver.SqlOptions) (string, []any, error) {
 
 func joinList(joiner byte, list []any, strAsCol bool, options *driver.SqlOptions) (string, []any, error) {
 	var args []any
-	var buf bytes.Buffer
+	var buf strings.Builder
 
 	for i := range list {
 		item := list[i]

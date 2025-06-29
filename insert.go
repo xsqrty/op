@@ -1,10 +1,10 @@
 package op
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/xsqrty/op/driver"
+	"strings"
 )
 
 type InsertBuilder interface {
@@ -115,7 +115,7 @@ func (ib *insertBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 		return "", nil, fmt.Errorf("insert: %w", ErrNoInsertValues)
 	}
 
-	var buf bytes.Buffer
+	var buf strings.Builder
 	var args []interface{}
 
 	buf.WriteString("INSERT INTO ")
