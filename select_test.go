@@ -116,6 +116,12 @@ func TestSelect(t *testing.T) {
 			ExpectedArgs: []any(nil),
 		},
 		{
+			Name:         "distinct_on",
+			Builder:      Select("id", "name").From("users").Distinct("col1", "col2"),
+			ExpectedSql:  `SELECT DISTINCT ON ("col1","col2") "id","name" FROM "users"`,
+			ExpectedArgs: []any(nil),
+		},
+		{
 			Name:         "all",
 			Builder:      Select("id", "name").From("users").All(),
 			ExpectedSql:  `SELECT ALL "id","name" FROM "users"`,

@@ -7,9 +7,8 @@ import (
 )
 
 type SelectBuilder interface {
-	Distinct() SelectBuilder
+	Distinct(args ...string) SelectBuilder
 	All() SelectBuilder
-	FieldsPrefix(fieldsPrefix string) SelectBuilder
 	From(from any) SelectBuilder
 	Where(exp driver.Sqler) SelectBuilder
 	Having(exp driver.Sqler) SelectBuilder
@@ -54,6 +53,10 @@ type join struct {
 	on       driver.Sqler
 }
 
+type distinctOn struct {
+	columns []Column
+}
+
 const (
 	orderDesc orderType = iota
 	orderAsc
@@ -75,17 +78,17 @@ const (
 )
 
 type selectBuilder struct {
-	fieldsPrefix string
-	from         Alias
-	where        And
-	having       And
-	joins        []join
-	fields       []Alias
-	orders       []Order
-	groupBy      []driver.Sqler
-	err          error
-	limit        uint64
-	offset       uint64
+	from    Alias
+	where   And
+	having  And
+	joins   []join
+	fields  []Alias
+	orders  []Order
+	groupBy []driver.Sqler
+	fp      driver.Sqler
+	err     error
+	limit   uint64
+	offset  uint64
 }
 
 func Select(fields ...any) SelectBuilder {
@@ -95,16 +98,23 @@ func Select(fields ...any) SelectBuilder {
 	return sb
 }
 
-func (sb *selectBuilder) Distinct() SelectBuilder {
-	return sb.FieldsPrefix("DISTINCT")
+func (sb *selectBuilder) Distinct(args ...string) SelectBuilder {
+	if len(args) == 0 {
+		sb.fp = driver.Pure("DISTINCT")
+		return sb
+	}
+
+	columns := make([]Column, len(args))
+	for i, arg := range args {
+		columns[i] = Column(arg)
+	}
+
+	sb.fp = &distinctOn{columns: columns}
+	return sb
 }
 
 func (sb *selectBuilder) All() SelectBuilder {
-	return sb.FieldsPrefix("ALL")
-}
-
-func (sb *selectBuilder) FieldsPrefix(fieldsPrefix string) SelectBuilder {
-	sb.fieldsPrefix = fieldsPrefix
+	sb.fp = driver.Pure("ALL")
 	return sb
 }
 
@@ -202,9 +212,15 @@ func (sb *selectBuilder) Sql(options *driver.SqlOptions) (sql string, args []any
 
 	var buf strings.Builder
 	buf.WriteString("SELECT")
-	if sb.fieldsPrefix != "" {
+	if sb.fp != nil {
+		sql, fpArgs, err := sb.fp.Sql(options)
+		if err != nil {
+			return "", nil, err
+		}
+
 		buf.WriteByte(' ')
-		buf.WriteString(sb.fieldsPrefix)
+		buf.WriteString(sql)
+		args = append(args, fpArgs...)
 	}
 
 	if len(sb.fields) > 0 {
@@ -459,6 +475,15 @@ func (o *order) NullsType() nullsOrderType {
 
 func (o *order) OrderType() orderType {
 	return o.orderType
+}
+
+func (d *distinctOn) Sql(options *driver.SqlOptions) (string, []any, error) {
+	sql, args, err := concatFields(d.columns, options)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return "DISTINCT ON (" + sql + ")", args, nil
 }
 
 func (j nullsOrderType) String() string {

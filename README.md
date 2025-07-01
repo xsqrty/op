@@ -286,7 +286,8 @@ users, err := orm.Query[User](
   op.InsertMany("users").
     Columns("id", "name", "age").
     Values(uuid.Must(uuid.NewV7()), "Bill", 10).
-    Values(uuid.Must(uuid.NewV7()), "John", 20),
+    Values(uuid.Must(uuid.NewV7()), "John", 20).
+		Returning("id", "name", "age"),
 ).GetMany(ctx, pool)
 ```
 
@@ -311,7 +312,8 @@ users, err := orm.Query[User](
   op.Update("users", op.Updates{
     "roles": []string{"all"},
     "age":   op.Add("age", driver.Value(1)),
-  }).Where(op.Eq("name", "Alex")),
+  }).Where(op.Eq("name", "Alex")).
+  Returning("id", "roles", "age"),
 ).GetMany(ctx, pool)
 ```
 
@@ -332,7 +334,8 @@ Delete and get affected (deleted) count
 
 ```go
 users, err := orm.Query[User](
-  op.Delete("users").Where(op.Eq("name", "Alex")),
+  op.Delete("users").Where(op.Eq("name", "Alex")).
+  Returning("id"),
 ).GetMany(ctx, pool)
 ```
 
@@ -484,7 +487,7 @@ sql, args, err := pool.Sql(op.Select().From("Users"))
 
 `op.Select(...)` create select builder
 
-* Distinct() SelectBuilder - `SELECT DISTINCT` eliminates duplicate rows from the result
+* Distinct(...string) SelectBuilder - `SELECT DISTINCT` eliminates duplicate rows from the result. If you specify arguments it will be interpreted as `DISTINCT ON(col, ...)`
 * All() SelectBuilder - `SELECT ALL` specifies the opposite: all rows are kept; that is the default.
 * From(from any) SelectBuilder - table (string) or op.Alias, for example `op.As("subquery", Select().From(...))`
 * Where(exp driver.Sqler) SelectBuilder - `WHERE` clause
