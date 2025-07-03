@@ -99,8 +99,9 @@ func (p *put[T]) getCache(md *modelDetails, pointers []any, fields []string, use
 		cacheKey += "_id"
 	}
 
+	typ := reflect.ValueOf(p.item).Type()
 	if cachedMap, ok := putCache.Load(cacheKey); ok {
-		if cacheInner, ok := cachedMap.(*sync.Map).Load(p.item); ok {
+		if cacheInner, ok := cachedMap.(*sync.Map).Load(typ); ok {
 			return cacheInner.(cache.ReturnableContainer)
 		}
 	}
@@ -128,7 +129,7 @@ func (p *put[T]) getCache(md *modelDetails, pointers []any, fields []string, use
 
 	result := cache.NewReturnable(insert)
 	inner, _ := putCache.LoadOrStore(cacheKey, &sync.Map{})
-	inner.(*sync.Map).Store(p.item, result)
+	inner.(*sync.Map).Store(typ, result)
 
 	return result
 }
