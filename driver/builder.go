@@ -28,6 +28,10 @@ type Sqler interface {
 	Sql(*SqlOptions) (string, []any, error)
 }
 
+type PreparedSqler interface {
+	PreparedSql(*SqlOptions) (string, []any, error)
+}
+
 func NewSqlOptions(option ...sqlOption) *SqlOptions {
 	options := &SqlOptions{}
 	for _, opt := range option {
@@ -92,6 +96,7 @@ func Sql(b Sqler, options *SqlOptions) (string, []any, error) {
 
 	if options.PlaceholderFormat != nil {
 		var buf strings.Builder
+		buf.Grow(len(sql) + len(args))
 
 		pos := 0
 		index := 1

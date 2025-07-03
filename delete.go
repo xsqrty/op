@@ -15,7 +15,8 @@ type DeleteBuilder interface {
 	GetReturning() []Alias
 	SetReturning(keys []any) error
 	SetReturningAliases(keys []Alias)
-	Sql(options *driver.SqlOptions) (string, []interface{}, error)
+	PreparedSql(options *driver.SqlOptions) (string, []any, error)
+	Sql(options *driver.SqlOptions) (string, []any, error)
 }
 
 type deleteBuilder struct {
@@ -57,13 +58,13 @@ func (db *deleteBuilder) Returning(keys ...any) DeleteBuilder {
 	return db
 }
 
-func (db *deleteBuilder) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
+func (db *deleteBuilder) Sql(options *driver.SqlOptions) (string, []any, error) {
 	if db.err != nil {
 		return "", nil, db.err
 	}
 
 	var buf strings.Builder
-	var args []interface{}
+	var args []any
 
 	buf.WriteString("DELETE FROM ")
 	sqlTable, tableArgs, err := db.table.Sql(options)
@@ -97,6 +98,10 @@ func (db *deleteBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	}
 
 	return buf.String(), args, nil
+}
+
+func (db *deleteBuilder) PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error) {
+	return driver.Sql(db, options)
 }
 
 func (db *deleteBuilder) LimitReturningOne() {}

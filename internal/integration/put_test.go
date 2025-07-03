@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
@@ -15,7 +14,7 @@ import (
 
 func TestPut(t *testing.T) {
 	EachConn(t, func(conn db.ConnPool) {
-		assert.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
+		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
 			err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
@@ -28,13 +27,45 @@ func TestPut(t *testing.T) {
 			u.UpdatedAt = driver.ZeroTime(updatedAt)
 
 			err = orm.Put(usersTable, u).With(ctx, conn)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			fromDb, err := orm.Query[MockUser](op.Select().From(usersTable).Where(op.Eq("name", "Rename user"))).GetOne(ctx, conn)
-			assert.NoError(t, err)
-			assert.Equal(t, u, fromDb)
-			assert.Equal(t, createdAt.UnixMilli(), time.Time(fromDb.CreatedAt).UnixMilli())
-			assert.Equal(t, updatedAt.UnixMilli(), time.Time(fromDb.UpdatedAt).UnixMilli())
+			require.NoError(t, err)
+			require.Equal(t, u, fromDb)
+			require.Equal(t, createdAt.UnixMilli(), time.Time(fromDb.CreatedAt).UnixMilli())
+			require.Equal(t, updatedAt.UnixMilli(), time.Time(fromDb.UpdatedAt).UnixMilli())
+
+			return errRollback
+		}))
+	})
+}
+
+func TestPutIds(t *testing.T) {
+	EachConn(t, func(conn db.ConnPool) {
+		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
+			id := 1000
+
+			companyNoId := &MockCompany{Name: gofakeit.Name()}
+			err := orm.Put[MockCompany](companiesTable, companyNoId).With(ctx, conn)
+
+			require.NoError(t, err)
+			require.NotEmpty(t, companyNoId)
+
+			companyWithId := &MockCompany{Name: gofakeit.Name(), ID: id}
+			err = orm.Put[MockCompany](companiesTable, companyWithId).With(ctx, conn)
+
+			require.NoError(t, err)
+			require.Equal(t, id, companyWithId.ID)
+
+			comp1, err := orm.Query[MockCompany](op.Select().From(companiesTable).Where(op.Eq("id", id))).GetOne(ctx, conn)
+			require.NoError(t, err)
+			require.Equal(t, companyWithId.ID, comp1.ID)
+			require.Equal(t, companyWithId.Name, comp1.Name)
+
+			comp2, err := orm.Query[MockCompany](op.Select().From(companiesTable).Where(op.Eq("id", companyNoId.ID))).GetOne(ctx, conn)
+			require.NoError(t, err)
+			require.Equal(t, companyNoId.ID, comp2.ID)
+			require.Equal(t, companyNoId.Name, comp2.Name)
 
 			return errRollback
 		}))

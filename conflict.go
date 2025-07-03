@@ -17,7 +17,7 @@ func DoUpdate(updates Updates) UpdateBuilder {
 	return Update(nil, updates)
 }
 
-func (ex Excluded) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
+func (ex Excluded) Sql(options *driver.SqlOptions) (string, []any, error) {
 	sql, args, err := Column(ex).Sql(options)
 	if err != nil {
 		return "", nil, err

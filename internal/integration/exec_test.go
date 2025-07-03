@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
@@ -15,24 +14,24 @@ import (
 
 func TestExec(t *testing.T) {
 	EachConn(t, func(conn db.ConnPool) {
-		assert.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
+		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
 			err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
 			count, err := orm.Count(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, conn)
-			assert.NoError(t, err)
-			assert.Greater(t, count, uint64(0))
+			require.NoError(t, err)
+			require.Greater(t, count, uint64(0))
 
 			event, err := orm.Exec(op.Delete(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, conn)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			rowsCount, err := event.RowsAffected()
-			assert.NoError(t, err)
-			assert.Equal(t, count, uint64(rowsCount))
+			require.NoError(t, err)
+			require.Equal(t, count, uint64(rowsCount))
 
 			count, err = orm.Count(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, conn)
-			assert.NoError(t, err)
-			assert.Equal(t, uint64(0), count)
+			require.NoError(t, err)
+			require.Equal(t, uint64(0), count)
 
 			name := gofakeit.Name()
 			email := gofakeit.Email()
@@ -45,7 +44,7 @@ func TestExec(t *testing.T) {
 			})).With(ctx, conn)
 
 			lastId, err := event.LastInsertId()
-			assert.Conditionf(t, func() bool {
+			require.Conditionf(t, func() bool {
 				if errors.Is(err, db.ErrPgxUnsupported) {
 					return true
 				}
@@ -55,18 +54,18 @@ func TestExec(t *testing.T) {
 
 			if err == nil {
 				user, err := orm.Query[MockUser](op.Select("created_at", "name", "email").From(usersTable).Where(op.Eq("id", lastId))).GetOne(ctx, conn)
-				assert.NoError(t, err)
-				assert.Equal(t, email, user.Email)
-				assert.Equal(t, name, user.Name)
-				assert.Equal(t, createdAt.Unix(), user.CreatedAt.Unix())
+				require.NoError(t, err)
+				require.Equal(t, email, user.Email)
+				require.Equal(t, name, user.Name)
+				require.Equal(t, createdAt.Unix(), user.CreatedAt.Unix())
 			}
 
 			event, err = orm.Exec(op.InsertMany(usersTable).Columns("name", "email").Values(gofakeit.Name(), gofakeit.Email()).Values(gofakeit.Name(), gofakeit.Email())).With(ctx, conn)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			rowsCount, err = event.RowsAffected()
-			assert.NoError(t, err)
-			assert.Equal(t, int64(2), rowsCount)
+			require.NoError(t, err)
+			require.Equal(t, int64(2), rowsCount)
 
 			return errRollback
 		}))

@@ -3,8 +3,8 @@ package orm
 import (
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/internal/testutil"
@@ -83,10 +83,10 @@ func TestPaginateApi(t *testing.T) {
 
 			res, err := tc.builder.With(context.Background(), query)
 
-			assert.NoError(t, err)
-			assert.Equal(t, uint64(2), res.TotalRows)
-			assert.Equal(t, "Alex", res.Rows[0].Name)
-			assert.Equal(t, "John", res.Rows[1].Name)
+			require.NoError(t, err)
+			require.Equal(t, uint64(2), res.TotalRows)
+			require.Equal(t, "Alex", res.Rows[0].Name)
+			require.Equal(t, "John", res.Rows[1].Name)
 		})
 	}
 }
@@ -123,7 +123,7 @@ func TestPaginate(t *testing.T) {
 
 	var req PaginateRequest
 	err := json.Unmarshal([]byte(reqString), &req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	res, err := Paginate[PaginateMockUser]("users", &req).
 		WhiteList("id", "age", "name").
@@ -133,14 +133,14 @@ func TestPaginate(t *testing.T) {
 		MaxSliceLen(10).
 		MaxFilterDepth(1).
 		LogQuery(func(sql string, args []any, err error) {
-			assert.NoError(t, err)
-			assert.Equal(t, expectedArgs, args)
-			assert.Equal(t, expectedSql, sql)
+			require.NoError(t, err)
+			require.Equal(t, expectedArgs, args)
+			require.Equal(t, expectedSql, sql)
 		}).
 		LogCounter(func(sql string, args []any, err error) {
-			assert.NoError(t, err)
-			assert.Equal(t, expectedCounterArgs, args)
-			assert.Equal(t, expectedCounterSql, sql)
+			require.NoError(t, err)
+			require.Equal(t, expectedCounterArgs, args)
+			require.Equal(t, expectedCounterSql, sql)
 		}).
 		GroupBy("users.id", "companies.name").
 		Where(op.Eq("companies.id", 111)).
@@ -152,16 +152,16 @@ func TestPaginate(t *testing.T) {
 		).
 		With(context.Background(), query)
 
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(2), res.TotalRows)
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), res.TotalRows)
 
-	assert.Equal(t, 1, res.Rows[0].ID)
-	assert.Equal(t, 25, res.Rows[0].Age)
-	assert.Equal(t, "Alex", res.Rows[0].Name)
+	require.Equal(t, 1, res.Rows[0].ID)
+	require.Equal(t, 25, res.Rows[0].Age)
+	require.Equal(t, "Alex", res.Rows[0].Name)
 
-	assert.Equal(t, 2, res.Rows[1].ID)
-	assert.Equal(t, 26, res.Rows[1].Age)
-	assert.Equal(t, "John", res.Rows[1].Name)
+	require.Equal(t, 2, res.Rows[1].ID)
+	require.Equal(t, 26, res.Rows[1].Age)
+	require.Equal(t, "John", res.Rows[1].Name)
 }
 
 func TestPaginateError(t *testing.T) {
@@ -181,13 +181,13 @@ func TestPaginateError(t *testing.T) {
 
 	var req PaginateRequest
 	err := json.Unmarshal([]byte(reqString), &req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	res, err := Paginate[PaginateMockUser]("users", &req).
 		WhiteList("id", "age", "name").
 		With(context.Background(), query)
 
-	assert.Nil(t, res)
-	assert.EqualError(t, err, "fields is empty. Please specify returning by .Fields()")
+	require.Nil(t, res)
+	require.EqualError(t, err, "fields is empty. Please specify returning by .Fields()")
 }
 
 func TestPaginateFilterError(t *testing.T) {
@@ -204,13 +204,13 @@ func TestPaginateFilterError(t *testing.T) {
 
 	var req PaginateRequest
 	err := json.Unmarshal([]byte(reqString), &req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	res, err := Paginate[PaginateMockUser]("users", &req).
 		Fields(
 			op.As("user_id", op.Column("users.id")),
 		).
 		With(context.Background(), query)
 
-	assert.Nil(t, res)
-	assert.EqualError(t, err, `paginate: target "id" is not allowed`)
+	require.Nil(t, res)
+	require.EqualError(t, err, `paginate: target "id" is not allowed`)
 }

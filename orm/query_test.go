@@ -3,8 +3,8 @@ package orm
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/internal/testutil"
@@ -19,7 +19,7 @@ type QueryMockUser struct {
 func TestGetMany(t *testing.T) {
 	expectedSql := `SELECT "users"."id","users"."name" FROM "users" WHERE "users"."id" = ?`
 	expectedArgs := []any{1}
-	
+
 	query := testutil.NewMockQueryable()
 	query.
 		On("Query", mock.Anything, expectedSql, expectedArgs).
@@ -29,18 +29,19 @@ func TestGetMany(t *testing.T) {
 		}), nil)
 
 	users, err := Query[QueryMockUser](op.Select().From("users").Where(op.Eq("users.id", 1))).Log(func(sql string, args []any, err error) {
-		assert.NoError(t, err)
-		assert.Equal(t, expectedArgs, args)
-		assert.Equal(t, expectedSql, sql)
+		require.NoError(t, err)
+		require.Equal(t, expectedArgs, args)
+		require.Equal(t, expectedSql, sql)
 	}).GetMany(context.Background(), query)
-	assert.NoError(t, err)
-	assert.Len(t, users, 2)
+	
+	require.NoError(t, err)
+	require.Len(t, users, 2)
 
-	assert.Equal(t, 1, users[0].ID)
-	assert.Equal(t, "Alex", users[0].Name)
+	require.Equal(t, 1, users[0].ID)
+	require.Equal(t, "Alex", users[0].Name)
 
-	assert.Equal(t, 2, users[1].ID)
-	assert.Equal(t, "John", users[1].Name)
+	require.Equal(t, 2, users[1].ID)
+	require.Equal(t, "John", users[1].Name)
 }
 
 func TestGetOne(t *testing.T) {
@@ -53,14 +54,14 @@ func TestGetOne(t *testing.T) {
 		Return(testutil.NewMockRow(nil, []any{100, "Bob"}))
 
 	user, err := Query[QueryMockUser](op.Select().From("users").Where(op.Eq("users.id", 100))).Log(func(sql string, args []any, err error) {
-		assert.NoError(t, err)
-		assert.Equal(t, expectedArgs, args)
-		assert.Equal(t, expectedSql, sql)
+		require.NoError(t, err)
+		require.Equal(t, expectedArgs, args)
+		require.Equal(t, expectedSql, sql)
 	}).GetOne(context.Background(), query)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 100, user.ID)
-	assert.Equal(t, "Bob", user.Name)
+	require.Equal(t, 100, user.ID)
+	require.Equal(t, "Bob", user.Name)
 }
 
 func TestGetOneError(t *testing.T) {
@@ -70,20 +71,20 @@ func TestGetOneError(t *testing.T) {
 		Return(testutil.NewMockRow(errors.New("sql syntax error"), nil))
 
 	user, err := Query[QueryMockUser](op.Select().From("users")).GetOne(context.Background(), query)
-	assert.Nil(t, user)
-	assert.EqualError(t, err, "sql syntax error")
+	require.Nil(t, user)
+	require.EqualError(t, err, "sql syntax error")
 }
 
 func TestGetOneSqlError(t *testing.T) {
 	query := testutil.NewMockQueryable()
 	user, err := Query[QueryMockUser](op.Select().From("users").Where(op.Eq("a+b", 1))).GetOne(context.Background(), query)
-	assert.Nil(t, user)
-	assert.EqualError(t, err, `target "a+b" contains illegal character '+'`)
+	require.Nil(t, user)
+	require.EqualError(t, err, `target "a+b" contains illegal character '+'`)
 }
 
 func TestGetOneModelError(t *testing.T) {
 	query := testutil.NewMockQueryable()
 	user, err := Query[QueryMockUser](op.Select("undefined").From("users")).GetOne(context.Background(), query)
-	assert.Nil(t, user)
-	assert.EqualError(t, err, `"undefined": target is not described in the struct *orm.QueryMockUser`)
+	require.Nil(t, user)
+	require.EqualError(t, err, `"undefined": target is not described in the struct *orm.QueryMockUser`)
 }

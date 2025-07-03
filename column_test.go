@@ -1,7 +1,7 @@
 package op
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/internal/testutil"
 	"testing"
 )
@@ -29,8 +29,8 @@ func TestColumn(t *testing.T) {
 		},
 	})
 
-	assert.True(t, Column("").IsZero())
-	assert.True(t, ColumnAlias("col").IsPureColumn())
+	require.True(t, Column("").IsZero())
+	require.True(t, ColumnAlias("col").IsPureColumn())
 }
 
 func TestAlias(t *testing.T) {

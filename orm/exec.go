@@ -13,20 +13,20 @@ type ExecBuilder interface {
 
 type Executable interface {
 	Exec(ctx context.Context, sql string, args ...any) (db.ExecResult, error)
-	Sql(sqler driver.Sqler) (string, []any, error)
+	SqlOptions() *driver.SqlOptions
 }
 
 type execBuilder struct {
-	driver.Sqler
+	exp    driver.PreparedSqler
 	logger LoggerHandler
 }
 
-func Exec(sqler driver.Sqler) ExecBuilder {
-	return &execBuilder{Sqler: sqler}
+func Exec(sqler driver.PreparedSqler) ExecBuilder {
+	return &execBuilder{exp: sqler}
 }
 
 func (eb *execBuilder) With(ctx context.Context, db Executable) (db.ExecResult, error) {
-	sql, args, err := db.Sql(eb.Sqler)
+	sql, args, err := eb.exp.PreparedSql(db.SqlOptions())
 	if eb.logger != nil {
 		eb.logger(sql, args, err)
 	}

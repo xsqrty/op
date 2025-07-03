@@ -4,14 +4,14 @@ import (
 	"context"
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/orm"
 	"testing"
 )
 
 func TestPostgresSpecial(t *testing.T) {
-	assert.Equal(t, errRollback, pgConn.Transact(ctx, func(ctx context.Context) error {
+	require.Equal(t, errRollback, pgConn.Transact(ctx, func(ctx context.Context) error {
 		id := uuid.Must(uuid.NewV7())
 		roles := []string{gofakeit.Name(), gofakeit.Name(), gofakeit.Name(), gofakeit.Name()}
 		data := MockPostgresData{
@@ -25,12 +25,12 @@ func TestPostgresSpecial(t *testing.T) {
 			Data:  data,
 		}).With(ctx, pgConn)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		pu, err := orm.Query[MockPostgres](op.Select().From(pgSpecialTable).Where(op.Eq("ID", id))).GetOne(ctx, pgConn)
-		assert.NoError(t, err)
-		assert.Equal(t, id, pu.ID)
-		assert.Equal(t, roles, pu.Roles)
-		assert.Equal(t, data, pu.Data)
+		require.NoError(t, err)
+		require.Equal(t, id, pu.ID)
+		require.Equal(t, roles, pu.Roles)
+		require.Equal(t, data, pu.Data)
 
 		return errRollback
 	}))

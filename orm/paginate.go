@@ -140,13 +140,13 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 	pg.rowsSbWrap.Limit(limit)
 	pg.rowsSbWrap.Offset(offset)
 
-	rows, err := Query[T](pg.rowsSb).Log(pg.loggerQuery).Wrap("result", pg.rowsSbWrap).GetMany(ctx, db)
+	rows, err := Query[T](pg.rowsSb).Log(pg.loggerQuery).wrap("result", pg.rowsSbWrap).GetMany(ctx, db)
 	if err != nil {
 		return nil, err
 	}
 
 	var totalCount uint64
-	sql, args, err := db.Sql(pg.countSbWrap.From(op.As("result", pg.rowsSb)))
+	sql, args, err := driver.Sql(pg.countSbWrap.From(op.As("result", pg.rowsSb)), db.SqlOptions())
 	if pg.loggerCounter != nil {
 		pg.loggerCounter(sql, args, err)
 	}

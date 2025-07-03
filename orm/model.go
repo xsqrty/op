@@ -23,6 +23,10 @@ type modelSetters struct {
 	path []int
 }
 
+type tagDetails struct {
+	isAggregated bool
+}
+
 type modelDetails struct {
 	primary      string
 	primaryAsTag string
@@ -30,6 +34,7 @@ type modelDetails struct {
 	mapping      map[string]map[string]string
 	fields       map[string][]string
 	tags         map[string][]string
+	tagsDetails  map[string]map[string]*tagDetails
 }
 
 func findAliasFullName[T any](g *query[T], data *modelDetails, shortValue string) []string {
@@ -86,10 +91,11 @@ func getModelDetails(table string, target any) (*modelDetails, error) {
 	}
 
 	result := &modelDetails{
-		setters: make(map[string]modelSetters),
-		mapping: make(map[string]map[string]string),
-		fields:  make(map[string][]string),
-		tags:    make(map[string][]string),
+		setters:     make(map[string]modelSetters),
+		mapping:     make(map[string]map[string]string),
+		fields:      make(map[string][]string),
+		tags:        make(map[string][]string),
+		tagsDetails: make(map[string]map[string]*tagDetails),
 	}
 
 	forEachModel(table, val, nil, result)
@@ -124,8 +130,11 @@ func forEachModel(table string, val reflect.Value, path []int, result *modelDeta
 			fieldVal = fieldVal.Elem()
 		}
 
-		if fieldVal.Kind() == reflect.Struct && isNested {
-			forEachModel(tag, fieldVal, append(path, i), result)
+		if isNested {
+			if fieldVal.Kind() == reflect.Struct {
+				forEachModel(tag, fieldVal, append(path, i), result)
+			}
+
 			continue
 		}
 
@@ -139,9 +148,15 @@ func forEachModel(table string, val reflect.Value, path []int, result *modelDeta
 			result.mapping[table] = make(map[string]string)
 		}
 
+		if _, ok := result.tagsDetails[table]; !ok {
+			result.tagsDetails[table] = make(map[string]*tagDetails)
+		}
+
 		result.mapping[table][tag] = pathName
 		result.tags[table] = append(result.tags[table], tag)
+		result.tagsDetails[table][tag] = &tagDetails{isAggregated: isAggregated}
 		result.fields[table] = append(result.fields[table], pathName)
+
 		if isPrimary {
 			result.primary = pathName
 			result.primaryAsTag = tag

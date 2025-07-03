@@ -3,7 +3,7 @@ package driver
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -17,26 +17,26 @@ func (e errorSqler) Sql(_ *SqlOptions) (string, []any, error) {
 func TestSql(t *testing.T) {
 	options := NewPostgresSqlOptions()
 	sql, args, err := Sql(Pure("?? ?,?,?", 1, "2", 3.01), options)
-	assert.NoError(t, err)
-	assert.Equal(t, "?? $1,$2,$3", sql)
-	assert.Equal(t, []any{1, "2", 3.01}, args)
+	require.NoError(t, err)
+	require.Equal(t, "?? $1,$2,$3", sql)
+	require.Equal(t, []any{1, "2", 3.01}, args)
 
 	sql, args, err = Sql(errorSqler{}, options)
-	assert.EqualError(t, err, "error")
-	assert.Equal(t, "", sql)
-	assert.Equal(t, []any(nil), args)
+	require.EqualError(t, err, "error")
+	require.Equal(t, "", sql)
+	require.Equal(t, []any(nil), args)
 
 	sql, args, err = Sql(Pure("?,?,?", 1, "2", 3.01), &SqlOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, "?,?,?", sql)
-	assert.Equal(t, []any{1, "2", 3.01}, args)
+	require.NoError(t, err)
+	require.Equal(t, "?,?,?", sql)
+	require.Equal(t, []any{1, "2", 3.01}, args)
 }
 
 func TestSqlWithPlaceholders(t *testing.T) {
 	sql, args, err := Sql(Pure("?? ?,?,?", 1, "2", 3.01), NewSqlOptions(WithPlaceholderFormat(func(i int) string {
 		return fmt.Sprintf("@%d", i)
 	})))
-	assert.NoError(t, err)
-	assert.Equal(t, "?? @1,@2,@3", sql)
-	assert.Equal(t, []any{1, "2", 3.01}, args)
+	require.NoError(t, err)
+	require.Equal(t, "?? @1,@2,@3", sql)
+	require.Equal(t, []any{1, "2", 3.01}, args)
 }

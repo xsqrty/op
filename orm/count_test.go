@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/internal/testutil"
 	"testing"
@@ -65,8 +65,8 @@ func TestCountApi(t *testing.T) {
 				Return(testutil.NewMockRow(nil, []any{totalCount}))
 
 			count, err := tc.builder.With(context.Background(), query)
-			assert.NoError(t, err)
-			assert.Equal(t, totalCount, count)
+			require.NoError(t, err)
+			require.Equal(t, totalCount, count)
 		})
 	}
 }
@@ -81,12 +81,12 @@ func TestCount(t *testing.T) {
 		Return(testutil.NewMockRow(nil, []any{uint64(55)}))
 
 	count, err := Count("users").By("id").Where(op.Eq("Name", "Alex")).Log(func(sql string, args []any, err error) {
-		assert.NoError(t, err)
-		assert.Equal(t, expectedArgs, args)
-		assert.Equal(t, expectedSql, sql)
+		require.NoError(t, err)
+		require.Equal(t, expectedArgs, args)
+		require.Equal(t, expectedSql, sql)
 	}).With(context.Background(), query)
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(55), count)
+	require.NoError(t, err)
+	require.Equal(t, uint64(55), count)
 
 	query = testutil.NewMockQueryable()
 	query.
@@ -94,8 +94,8 @@ func TestCount(t *testing.T) {
 		Return(testutil.NewMockRow(nil, []any{uint64(55)}))
 
 	count, err = Count("users").ByDistinct("id").Where(op.Eq("Name", "Alex")).With(context.Background(), query)
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(55), count)
+	require.NoError(t, err)
+	require.Equal(t, uint64(55), count)
 
 	query = testutil.NewMockQueryable()
 	query.
@@ -103,8 +103,8 @@ func TestCount(t *testing.T) {
 		Return(testutil.NewMockRow(nil, []any{uint64(55)}))
 
 	count, err = Count("users").Where(op.Eq("Name", "Alex")).With(context.Background(), query)
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(55), count)
+	require.NoError(t, err)
+	require.Equal(t, uint64(55), count)
 }
 
 func TestCountError(t *testing.T) {
@@ -114,6 +114,6 @@ func TestCountError(t *testing.T) {
 		Return(testutil.NewMockRow(errors.New("syntax error"), nil))
 
 	count, err := Count("users").By("id").Where(op.Eq("Name", "Alex")).With(context.Background(), query)
-	assert.Equal(t, uint64(0), count)
-	assert.EqualError(t, err, "syntax error")
+	require.Equal(t, uint64(0), count)
+	require.EqualError(t, err, "syntax error")
 }

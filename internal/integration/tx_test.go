@@ -3,7 +3,7 @@ package integration
 import (
 	"context"
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/orm"
@@ -14,7 +14,7 @@ import (
 func TestTransact_Commit(t *testing.T) {
 	EachConn(t, func(conn db.ConnPool) {
 		name := gofakeit.UUID()
-		assert.NoError(t, conn.Transact(ctx, func(ctx context.Context) error {
+		require.NoError(t, conn.Transact(ctx, func(ctx context.Context) error {
 			err := orm.Put[MockCountry](countriesTable, &MockCountry{
 				Name: name,
 			}).With(ctx, conn)
@@ -23,8 +23,8 @@ func TestTransact_Commit(t *testing.T) {
 		}))
 
 		count, err := orm.Count(countriesTable).Where(op.Eq("name", name)).With(ctx, conn)
-		assert.NoError(t, err)
-		assert.Equal(t, uint64(1), count)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), count)
 	})
 }
 
@@ -47,7 +47,7 @@ func TestTransact_Rollback(t *testing.T) {
 			return err
 		})
 
-		assert.Condition(t, func() bool {
+		require.Condition(t, func() bool {
 			if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 				return true
 			}
@@ -59,7 +59,7 @@ func TestTransact_Rollback(t *testing.T) {
 			return false
 		})
 		count, err := orm.Count(countriesTable).Where(op.Eq("name", name)).With(ctx, conn)
-		assert.NoError(t, err)
-		assert.Equal(t, uint64(0), count)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), count)
 	})
 }

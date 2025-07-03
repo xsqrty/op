@@ -18,7 +18,8 @@ type InsertBuilder interface {
 	GetReturning() []Alias
 	SetReturning(keys []any) error
 	SetReturningAliases(keys []Alias)
-	Sql(options *driver.SqlOptions) (string, []interface{}, error)
+	PreparedSql(options *driver.SqlOptions) (string, []any, error)
+	Sql(options *driver.SqlOptions) (string, []any, error)
 }
 
 type Inserting map[string]any
@@ -102,7 +103,7 @@ func (ib *insertBuilder) Returning(keys ...any) InsertBuilder {
 	return ib
 }
 
-func (ib *insertBuilder) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
+func (ib *insertBuilder) Sql(options *driver.SqlOptions) (string, []any, error) {
 	if ib.err != nil {
 		return "", nil, ib.err
 	}
@@ -116,7 +117,7 @@ func (ib *insertBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	}
 
 	var buf strings.Builder
-	var args []interface{}
+	var args []any
 
 	buf.WriteString("INSERT INTO ")
 	sqlInto, intoArgs, err := ib.into.Sql(options)
@@ -186,6 +187,10 @@ func (ib *insertBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	}
 
 	return buf.String(), args, nil
+}
+
+func (ib *insertBuilder) PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error) {
+	return driver.Sql(ib, options)
 }
 
 func (ib *insertBuilder) LimitReturningOne() {}

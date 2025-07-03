@@ -37,7 +37,7 @@ func (cs cases) Else(elseCase driver.Sqler) driver.Sqler {
 	}
 }
 
-func (cw *caseWhen) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
+func (cw *caseWhen) Sql(options *driver.SqlOptions) (string, []any, error) {
 	var args []any
 	var buf strings.Builder
 

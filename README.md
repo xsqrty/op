@@ -553,7 +553,7 @@ LIMIT $6 OFFSET $7
 * Values(values ...any) InsertBuilder - add values list (only for `op.InsertMany`)
 * OnConflict(target any, do driver.Sqler) InsertBuilder - `ON CONFLICT` clause
 * Returning(keys ...any) InsertBuilder - set returning fields
-* Sql(options *driver.SqlOptions) (string, []interface{}, error) - builder
+* Sql(options *driver.SqlOptions) (string, []any, error) - builder
 
 ```go
 op.Insert("users", op.Inserting{
@@ -605,7 +605,7 @@ RETURNING "id"
 
 * Where(exp driver.Sqler) UpdateBuilder - `WHERE` clause
 * Returning(keys ...any) UpdateBuilder - set returning fields
-* Sql(options *driver.SqlOptions) (string, []interface{}, error) - builder
+* Sql(options *driver.SqlOptions) (string, []any, error) - builder
 
 ```go
 op.Update("users", op.Updates{
@@ -628,7 +628,7 @@ RETURNING "id","age"
 
 * Where(exp driver.Sqler) DeleteBuilder - `WHERE` clause
 * Returning(keys ...any) DeleteBuilder - set returning fields
-* Sql(options *driver.SqlOptions) (string, []interface{}, error) - builder
+* Sql(options *driver.SqlOptions) (string, []any, error) - builder
 
 ```go
 op.Delete("users").Where(op.Eq("id", 1)).Returning("id", "name")

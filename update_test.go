@@ -1,7 +1,7 @@
 package op
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/internal/testutil"
 	"testing"
 )
@@ -90,19 +90,19 @@ func TestUpdateUsingTables(t *testing.T) {
 	item := Update("users", Updates{})
 	tables := item.UsingTables()
 
-	assert.Equal(t, []string{"users"}, tables)
-	assert.Equal(t, "users", item.With())
+	require.Equal(t, []string{"users"}, tables)
+	require.Equal(t, "users", item.With())
 }
 
 func TestUpdateReturning(t *testing.T) {
 	item := Update("users", Updates{}).Returning("id")
 	item.LimitReturningOne()
 
-	assert.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
+	require.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
 
 	item.SetReturning([]any{"id", "age"})
-	assert.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
+	require.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
 
 	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
-	assert.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
+	require.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
 }

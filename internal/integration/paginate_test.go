@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
@@ -24,7 +23,7 @@ type PaginateMockUser struct {
 
 func TestPaginate(t *testing.T) {
 	EachConn(t, func(conn db.ConnPool) {
-		assert.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
+		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
 			err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
@@ -44,7 +43,7 @@ func TestPaginate(t *testing.T) {
 
 			var req orm.PaginateRequest
 			err = json.Unmarshal([]byte(reqString), &req)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			res, err := orm.Paginate[PaginateMockUser](usersTable, &req).
 				WhiteList("user_id", "user_deleted_at").
@@ -65,21 +64,21 @@ func TestPaginate(t *testing.T) {
 				}
 			}
 
-			assert.NoError(t, err)
-			assert.NotNil(t, res)
-			assert.Equal(t, uint64(deletedCount), res.TotalRows)
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			require.Equal(t, uint64(deletedCount), res.TotalRows)
 
 			if res.TotalRows > 0 {
 				for _, row := range res.Rows {
 					if row.CompanyName != "" {
 						company := mockCompanies[int(row.CompanyId)-1]
-						assert.Equal(t, company.ID, int(row.CompanyId))
-						assert.Equal(t, company.Name, string(row.CompanyName))
+						require.Equal(t, company.ID, int(row.CompanyId))
+						require.Equal(t, company.Name, string(row.CompanyName))
 					}
 
-					assert.NotEqual(t, 0, row.ID)
-					assert.NotEqual(t, "", row.Name)
-					assert.Condition(t, func() bool {
+					require.NotEqual(t, 0, row.ID)
+					require.NotEqual(t, "", row.Name)
+					require.Condition(t, func() bool {
 						return row.DeletedAt.Valid
 					})
 				}
@@ -93,7 +92,7 @@ func TestPaginate(t *testing.T) {
 				return u2.ID - u1.ID
 			})
 
-			assert.Equal(t, startId, users[len(users)-1].ID)
+			require.Equal(t, startId, users[len(users)-1].ID)
 			var filtered []*MockUser
 			for _, u := range users {
 				if u.DeletedAt.Valid {
@@ -103,7 +102,7 @@ func TestPaginate(t *testing.T) {
 
 			prepared := filtered[2:4]
 			for i, u := range res.Rows {
-				assert.Equal(t, prepared[i].ID, u.ID)
+				require.Equal(t, prepared[i].ID, u.ID)
 			}
 
 			return errRollback

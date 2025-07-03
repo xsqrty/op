@@ -1,7 +1,7 @@
 package testutil
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/driver"
 	"testing"
 )
@@ -27,13 +27,13 @@ func RunCases(t *testing.T, options *driver.SqlOptions, testCases []TestCase) {
 
 			sql, args, err := c.Builder.Sql(ops)
 			if c.ExpectedErr != "" {
-				assert.EqualError(t, err, c.ExpectedErr)
+				require.EqualError(t, err, c.ExpectedErr)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			if len(c.ExpectedSqls) > 0 {
-				assert.Condition(t, func() bool {
+				require.Condition(t, func() bool {
 					for _, expectedSql := range c.ExpectedSqls {
 						if sql == expectedSql {
 							return true
@@ -43,10 +43,10 @@ func RunCases(t *testing.T, options *driver.SqlOptions, testCases []TestCase) {
 					return false
 				})
 			} else {
-				assert.Equal(t, c.ExpectedSql, sql)
+				require.Equal(t, c.ExpectedSql, sql)
 			}
 
-			assert.Equal(t, c.ExpectedArgs, args)
+			require.Equal(t, c.ExpectedArgs, args)
 		})
 	}
 }

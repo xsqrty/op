@@ -52,8 +52,8 @@ func (m *mockQueryable) QueryRow(ctx context.Context, sql string, args ...any) d
 	return mockArgs.Get(0).(db.Row)
 }
 
-func (m *mockQueryable) Sql(sqler driver.Sqler) (string, []any, error) {
-	return driver.Sql(sqler, NewDefaultOptions())
+func (m *mockQueryable) SqlOptions() *driver.SqlOptions {
+	return NewDefaultOptions()
 }
 
 func (mr *mockRows) Rows() iter.Seq2[int, db.Scanner] {

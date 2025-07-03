@@ -92,6 +92,10 @@ func (cp *connPool) Sql(b driver.Sqler) (string, []any, error) {
 	return driver.Sql(b, cp.options)
 }
 
+func (cp *connPool) SqlOptions() *driver.SqlOptions {
+	return cp.options
+}
+
 func (cp *connPool) get(ctx context.Context) stdDb {
 	tx := ctx.Value(txKey)
 	if tx != nil {

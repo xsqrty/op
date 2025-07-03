@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/xsqrty/op/driver"
 	"iter"
-	"time"
 )
 
 var ErrPgxUnsupported = errors.New("unsupported")
@@ -93,24 +92,12 @@ func (pa *pgxAdapter) Close() error {
 	return nil
 }
 
-func (pa *pgxAdapter) SetConnMaxLifetime(d time.Duration) {
-	pa.SetConnMaxLifetime(d)
-}
-
-func (pa *pgxAdapter) SetMaxOpenConns(n int) {
-	pa.SetMaxOpenConns(n)
-}
-
-func (pa *pgxAdapter) SetMaxIdleConns(n int) {
-	pa.SetMaxIdleConns(n)
-}
-
-func (pa *pgxAdapter) SetConnMaxIdleTime(d time.Duration) {
-	pa.SetConnMaxIdleTime(d)
-}
-
 func (pa *pgxAdapter) Sql(b driver.Sqler) (string, []any, error) {
 	return driver.Sql(b, pa.options)
+}
+
+func (pa *pgxAdapter) SqlOptions() *driver.SqlOptions {
+	return pa.options
 }
 
 func (pa *pgxAdapter) get(ctx context.Context) pgxQueryExec {

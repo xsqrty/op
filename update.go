@@ -15,7 +15,8 @@ type UpdateBuilder interface {
 	GetReturning() []Alias
 	SetReturning(keys []any) error
 	SetReturningAliases(keys []Alias)
-	Sql(options *driver.SqlOptions) (string, []interface{}, error)
+	PreparedSql(options *driver.SqlOptions) (string, []any, error)
+	Sql(options *driver.SqlOptions) (string, []any, error)
 }
 
 type Updates map[string]any
@@ -64,7 +65,7 @@ func (ub *updateBuilder) Returning(keys ...any) UpdateBuilder {
 	return ub
 }
 
-func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []interface{}, error) {
+func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []any, error) {
 	if ub.err != nil {
 		return "", nil, ub.err
 	}
@@ -74,7 +75,7 @@ func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	}
 
 	var buf strings.Builder
-	var args []interface{}
+	var args []any
 
 	buf.WriteString("UPDATE ")
 	if ub.table != nil {
@@ -120,6 +121,10 @@ func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []interface{},
 	}
 
 	return buf.String(), args, nil
+}
+
+func (ub *updateBuilder) PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error) {
+	return driver.Sql(ub, options)
 }
 
 func (ub *updateBuilder) LimitReturningOne() {}

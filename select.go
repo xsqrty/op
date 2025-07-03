@@ -27,6 +27,7 @@ type SelectBuilder interface {
 	GetReturning() []Alias
 	SetReturning(keys []any) error
 	SetReturningAliases(keys []Alias)
+	PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error)
 	Sql(options *driver.SqlOptions) (sql string, args []any, err error)
 }
 
@@ -338,6 +339,10 @@ func (sb *selectBuilder) Sql(options *driver.SqlOptions) (sql string, args []any
 	}
 
 	return buf.String(), args, nil
+}
+
+func (sb *selectBuilder) PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error) {
+	return driver.Sql(sb, options)
 }
 
 func (sb *selectBuilder) LimitReturningOne() {

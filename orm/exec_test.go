@@ -2,8 +2,8 @@ package orm
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/internal/testutil"
 	"testing"
@@ -25,25 +25,25 @@ func TestExec(t *testing.T) {
 		op.Eq("id", 1),
 		op.Eq("deleted_at", nil),
 	})).Log(func(sql string, args []any, err error) {
-		assert.NoError(t, err)
-		assert.Equal(t, expectedArgs, args)
-		assert.Equal(t, expectedSql, sql)
+		require.NoError(t, err)
+		require.Equal(t, expectedArgs, args)
+		require.Equal(t, expectedSql, sql)
 	}).With(context.Background(), executor)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rowsCount, err := res.RowsAffected()
-	assert.NoError(t, err)
-	assert.Equal(t, int64(100), rowsCount)
+	require.NoError(t, err)
+	require.Equal(t, int64(100), rowsCount)
 
 	lastId, err := res.LastInsertId()
-	assert.NoError(t, err)
-	assert.Equal(t, int64(200), lastId)
+	require.NoError(t, err)
+	require.Equal(t, int64(200), lastId)
 }
 
 func TestExecError(t *testing.T) {
 	res, err := Exec(op.Delete("a+b")).With(context.Background(), testutil.NewMockExecutor())
 
-	assert.Nil(t, res)
-	assert.EqualError(t, err, `target "a+b" contains illegal character '+'`)
+	require.Nil(t, res)
+	require.EqualError(t, err, `target "a+b" contains illegal character '+'`)
 }

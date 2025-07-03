@@ -3,7 +3,7 @@ package orm
 import (
 	"fmt"
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -18,6 +18,7 @@ type MockModel struct {
 	ID      string       `op:"id,primary"`
 	Name    string       `op:"name"`
 	Date    *time.Time   `op:"date"`
+	Count   int          `op:"count,aggregated"`
 	Company *MockCompany `op:"companies,nested"`
 	NoTags  string
 }
@@ -30,24 +31,26 @@ func TestGetModelDetails(t *testing.T) {
 		fullNameColumn := fmt.Sprintf("%s.%s", table, "name")
 		fullNameDate := fmt.Sprintf("%s.%s", table, "date")
 
-		assert.NoError(t, err)
-		assert.Equal(t, fullIdColumn, details.primary)
-		assert.Equal(t, "id", details.primaryAsTag)
+		require.NoError(t, err)
+		require.Equal(t, fullIdColumn, details.primary)
+		require.Equal(t, "id", details.primaryAsTag)
 
-		assert.Equal(t, map[string]modelSetters{
+		require.Equal(t, map[string]modelSetters{
 			fullIdColumn:     {path: []int{0}},
 			fullNameColumn:   {path: []int{1}},
 			fullNameDate:     {path: []int{2}},
-			"companies.id":   {path: []int{3, 0}},
-			"companies.name": {path: []int{3, 1}},
-			"companies.date": {path: []int{3, 2}},
+			"count":          {path: []int{3}},
+			"companies.id":   {path: []int{4, 0}},
+			"companies.name": {path: []int{4, 1}},
+			"companies.date": {path: []int{4, 2}},
 		}, details.setters)
 
-		assert.Equal(t, map[string]map[string]string{
+		require.Equal(t, map[string]map[string]string{
 			table: {
-				"id":   fullIdColumn,
-				"name": fullNameColumn,
-				"date": fullNameDate,
+				"id":    fullIdColumn,
+				"name":  fullNameColumn,
+				"date":  fullNameDate,
+				"count": "count",
 			},
 			"companies": {
 				"id":   "companies.id",
@@ -56,7 +59,7 @@ func TestGetModelDetails(t *testing.T) {
 			},
 		}, details.mapping)
 
-		assert.Equal(t, map[string][]string{
+		require.Equal(t, map[string][]string{
 			"companies": {
 				"companies.id",
 				"companies.name",
@@ -66,10 +69,11 @@ func TestGetModelDetails(t *testing.T) {
 				fullIdColumn,
 				fullNameColumn,
 				fullNameDate,
+				"count",
 			},
 		}, details.fields)
 
-		assert.Equal(t, map[string][]string{
+		require.Equal(t, map[string][]string{
 			"companies": {
 				"id",
 				"name",
@@ -79,25 +83,40 @@ func TestGetModelDetails(t *testing.T) {
 				"id",
 				"name",
 				"date",
+				"count",
 			},
 		}, details.tags)
+
+		require.Equal(t, map[string]map[string]*tagDetails{
+			"companies": {
+				"id":   &tagDetails{isAggregated: false},
+				"name": &tagDetails{isAggregated: false},
+				"date": &tagDetails{isAggregated: false},
+			},
+			table: {
+				"id":    &tagDetails{isAggregated: false},
+				"name":  &tagDetails{isAggregated: false},
+				"date":  &tagDetails{isAggregated: false},
+				"count": &tagDetails{isAggregated: true},
+			},
+		}, details.tagsDetails)
 	}
 
 	var mp *MockModel
 	details, err := getModelDetails("users", mp)
-	assert.Nil(t, details)
-	assert.EqualError(t, err, ErrTargetIsNil.Error())
+	require.Nil(t, details)
+	require.EqualError(t, err, ErrTargetIsNil.Error())
 
 	var m MockModel
 	details, err = getModelDetails("users", m)
-	assert.Nil(t, details)
-	assert.EqualError(t, err, ErrTargetNotStructPointer.Error())
+	require.Nil(t, details)
+	require.EqualError(t, err, ErrTargetNotStructPointer.Error())
 
 	s := ""
 	ms := &s
 	details, err = getModelDetails("users", ms)
-	assert.Nil(t, details)
-	assert.EqualError(t, err, ErrTargetNotStructPointer.Error())
+	require.Nil(t, details)
+	require.EqualError(t, err, ErrTargetNotStructPointer.Error())
 }
 
 func TestGetSettersKeysByTags(t *testing.T) {
@@ -105,15 +124,15 @@ func TestGetSettersKeysByTags(t *testing.T) {
 	details, _ := getModelDetails(table, &MockModel{})
 	setters, err := getSettersKeysByTags(details, table, []string{"id", "name"})
 
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]modelSetters{
+	require.NoError(t, err)
+	require.Equal(t, map[string]modelSetters{
 		"id":   {path: []int{0}},
 		"name": {path: []int{1}},
 	}, setters)
 
 	setters, err = getSettersKeysByTags(details, table, []string{"undefined"})
-	assert.Nil(t, setters)
-	assert.EqualError(t, err, `tag "undefined" does not exist in the setters list`)
+	require.Nil(t, setters)
+	require.EqualError(t, err, `tag "undefined" does not exist in the setters list`)
 }
 
 func TestGetSettersKeysByFields(t *testing.T) {
@@ -123,8 +142,8 @@ func TestGetSettersKeysByFields(t *testing.T) {
 	details, _ := getModelDetails(table, model)
 	pointers, err := getPointersByModelSetters(model, details.setters, []string{"users.id", "users.name", "users.date", "companies.id", "companies.name", "companies.date"})
 
-	assert.NoError(t, err)
-	assert.Equal(t, []any{
+	require.NoError(t, err)
+	require.Equal(t, []any{
 		&model.ID,
 		&model.Name,
 		model.Date,
@@ -139,21 +158,21 @@ func TestGetSettersKeysByFields(t *testing.T) {
 	*(pointers[2].(*time.Time)) = now
 	*(pointers[4].(*string)) = name
 
-	assert.Equal(t, now.Unix(), model.Date.Unix())
-	assert.Equal(t, name, model.Company.Name)
+	require.Equal(t, now.Unix(), model.Date.Unix())
+	require.Equal(t, name, model.Company.Name)
 
 	var mp *MockModel
 	pointers, err = getPointersByModelSetters(mp, details.setters, []string{"users.id", "users.name"})
-	assert.Nil(t, pointers)
-	assert.EqualError(t, err, ErrTargetIsNil.Error())
+	require.Nil(t, pointers)
+	require.EqualError(t, err, ErrTargetIsNil.Error())
 
 	var m MockModel
 	pointers, err = getPointersByModelSetters(m, details.setters, []string{"users.id", "users.name"})
-	assert.Nil(t, pointers)
-	assert.EqualError(t, err, ErrTargetNotStructPointer.Error())
+	require.Nil(t, pointers)
+	require.EqualError(t, err, ErrTargetNotStructPointer.Error())
 
 	details, _ = getModelDetails(table, model)
 	pointers, err = getPointersByModelSetters(model, details.setters, []string{"undefined"})
-	assert.Nil(t, pointers)
-	assert.EqualError(t, err, `key "undefined" is not described in *orm.MockModel`)
+	require.Nil(t, pointers)
+	require.EqualError(t, err, `key "undefined" is not described in *orm.MockModel`)
 }

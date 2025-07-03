@@ -1,7 +1,7 @@
 package op
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/internal/testutil"
 	"testing"
 )
@@ -224,21 +224,21 @@ func TestSelectUsingTables(t *testing.T) {
 	item := Select().From("users").Join("roles", Eq("user_id", "users.id"))
 	tables := item.UsingTables()
 
-	assert.Equal(t, []string{"users", "roles"}, tables)
-	assert.Equal(t, "users", item.With())
+	require.Equal(t, []string{"users", "roles"}, tables)
+	require.Equal(t, "users", item.With())
 }
 
 func TestSelectReturning(t *testing.T) {
 	item := Select("id").From("users")
 	item.LimitReturningOne()
 
-	assert.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
+	require.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
 
 	item.SetReturning([]any{"id", "age"})
-	assert.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
+	require.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
 
 	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
-	assert.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
+	require.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
 }
 
 func TestOrder(t *testing.T) {
@@ -301,14 +301,14 @@ func TestOrder(t *testing.T) {
 	for _, orderCase := range orderCases {
 		sql, _, err := orderCase.builder.Sql(options)
 
-		assert.NoError(t, err)
-		assert.Equal(t, orderCase.expectedSql, sql)
+		require.NoError(t, err)
+		require.Equal(t, orderCase.expectedSql, sql)
 
-		assert.Equal(t, orderCase.orderType, orderCase.builder.OrderType())
-		assert.Equal(t, orderCase.nullsOrderType, orderCase.builder.NullsType())
-		assert.Equal(t, orderCase.target, orderCase.builder.Target())
+		require.Equal(t, orderCase.orderType, orderCase.builder.OrderType())
+		require.Equal(t, orderCase.nullsOrderType, orderCase.builder.NullsType())
+		require.Equal(t, orderCase.target, orderCase.builder.Target())
 	}
 
-	assert.Equal(t, "", nullsNone.String())
-	assert.Equal(t, "", orderNone.String())
+	require.Equal(t, "", nullsNone.String())
+	require.Equal(t, "", orderNone.String())
 }

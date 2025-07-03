@@ -11,7 +11,7 @@ type QueryBuilder[T any] interface {
 	GetOne(ctx context.Context, db Queryable) (*T, error)
 	GetMany(ctx context.Context, db Queryable) ([]*T, error)
 	Log(LoggerHandler) QueryBuilder[T]
-	Wrap(name string, wrap op.SelectBuilder) QueryBuilder[T]
+	wrap(name string, wrap op.SelectBuilder) QueryBuilder[T]
 }
 
 type Returnable interface {
@@ -20,21 +20,22 @@ type Returnable interface {
 	GetReturning() []op.Alias
 	SetReturning([]any) error
 	SetReturningAliases([]op.Alias)
-	Sql(options *driver.SqlOptions) (string, []interface{}, error)
+	Sql(options *driver.SqlOptions) (string, []any, error)
+	PreparedSql(options *driver.SqlOptions) (string, []any, error)
 	LimitReturningOne()
 }
 
 type Queryable interface {
 	Query(ctx context.Context, sql string, args ...any) (db.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) db.Row
-	Sql(sqler driver.Sqler) (string, []any, error)
+	SqlOptions() *driver.SqlOptions
 }
 
 type query[T any] struct {
 	with        string
 	ret         Returnable
 	logger      LoggerHandler
-	wrap        *wrapper
+	wrapper     *wrapper
 	aliasMapper func(op.Alias)
 	usingTables []string
 }
@@ -65,7 +66,7 @@ func (q *query[T]) GetOne(ctx context.Context, db Queryable) (*T, error) {
 	}
 
 	q.ret.LimitReturningOne()
-	sql, args, err := q.getQuery(db)
+	sql, args, err := q.sql(db)
 	q.log(sql, args, err)
 	if err != nil {
 		return nil, err
@@ -87,7 +88,7 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 		return nil, err
 	}
 
-	sql, args, err := q.getQuery(db)
+	sql, args, err := q.sql(db)
 	q.log(sql, args, err)
 	if err != nil {
 		return nil, err
@@ -121,8 +122,8 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 	return result, nil
 }
 
-func (q *query[T]) Wrap(name string, wrap op.SelectBuilder) QueryBuilder[T] {
-	q.wrap = &wrapper{name: name, sb: wrap}
+func (q *query[T]) wrap(name string, wrap op.SelectBuilder) QueryBuilder[T] {
+	q.wrapper = &wrapper{name: name, sb: wrap}
 	return q
 }
 
@@ -131,12 +132,12 @@ func (q *query[T]) Log(lh LoggerHandler) QueryBuilder[T] {
 	return q
 }
 
-func (q *query[T]) getQuery(db Queryable) (string, []any, error) {
-	if q.wrap != nil {
-		return db.Sql(q.wrap.sb.From(op.As(q.wrap.name, q.ret)))
+func (q *query[T]) sql(db Queryable) (string, []any, error) {
+	if q.wrapper != nil {
+		return q.wrapper.sb.From(op.As(q.wrapper.name, q.ret)).PreparedSql(db.SqlOptions())
 	}
 
-	return db.Sql(q.ret)
+	return q.ret.PreparedSql(db.SqlOptions())
 }
 
 func (q *query[T]) log(sql string, args []any, err error) {
