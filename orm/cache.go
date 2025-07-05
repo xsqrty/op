@@ -52,15 +52,22 @@ func (rc *retCache) With() string {
 func (rc *retCache) GetReturning() []op.Alias {
 	rc.container.retM.RLock()
 	defer rc.container.retM.RUnlock()
-	returning := rc.container.ret.GetReturning()
 
-	return returning
+	returning := rc.container.ret.GetReturning()
+	result := make([]op.Alias, len(returning))
+
+	for i := 0; i < len(returning); i++ {
+		result[i] = returning[i].Clone()
+	}
+
+	return result
 }
 
 func (rc *retCache) SetReturning(fields []any) error {
 	rc.container.sreOnce.Do(func() {
 		rc.container.retM.Lock()
 		defer rc.container.retM.Unlock()
+
 		rc.container.retErr = rc.container.ret.SetReturning(fields)
 	})
 
