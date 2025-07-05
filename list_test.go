@@ -6,6 +6,7 @@ import (
 )
 
 func TestList(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "list",

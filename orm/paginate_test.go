@@ -19,6 +19,7 @@ type PaginateMockUser struct {
 }
 
 func TestPaginateApi(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name              string
 		expectedSql       string
@@ -71,6 +72,7 @@ func TestPaginateApi(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			query := testutil.NewMockQueryable()
 			query.
 				On("Query", mock.Anything, tc.expectedSql, tc.expectedArgs).
@@ -92,6 +94,7 @@ func TestPaginateApi(t *testing.T) {
 }
 
 func TestPaginate(t *testing.T) {
+	t.Parallel()
 	expectedSql := `SELECT * FROM (SELECT ("users"."id") AS "user_id",("users"."age") AS "user_age",("users"."name") AS "user_name",("companies"."name") AS "company_name" FROM "users" LEFT JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "companies"."id" = ? GROUP BY "users"."id","companies"."name") AS "result" WHERE ("age" = ? OR "age" = ? OR "id" IN (?,?,?)) ORDER BY "id" DESC LIMIT ?`
 	expectedArgs := []any{111, float64(25), float64(26), float64(1), float64(2), float64(3), uint64(5)}
 
@@ -165,6 +168,7 @@ func TestPaginate(t *testing.T) {
 }
 
 func TestPaginateError(t *testing.T) {
+	t.Parallel()
 	query := testutil.NewMockQueryable()
 	reqString := `{
 			"limit": 10,
@@ -191,6 +195,7 @@ func TestPaginateError(t *testing.T) {
 }
 
 func TestPaginateFilterError(t *testing.T) {
+	t.Parallel()
 	query := testutil.NewMockQueryable()
 	reqString := `{
 			"limit": 10,

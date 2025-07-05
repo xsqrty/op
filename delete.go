@@ -15,6 +15,7 @@ type DeleteBuilder interface {
 	GetReturning() []Alias
 	SetReturning(keys []any) error
 	SetReturningAliases(keys []Alias)
+	CounterType() CounterType
 	PreparedSql(options *driver.SqlOptions) (string, []any, error)
 	Sql(options *driver.SqlOptions) (string, []any, error)
 }
@@ -25,6 +26,8 @@ type deleteBuilder struct {
 	where         And
 	err           error
 }
+
+var _ Returnable = DeleteBuilder(nil)
 
 func Delete(table any) DeleteBuilder {
 	db := &deleteBuilder{}
@@ -124,6 +127,10 @@ func (db *deleteBuilder) SetReturning(keys []any) error {
 
 func (db *deleteBuilder) SetReturningAliases(keys []Alias) {
 	db.returningKeys = keys
+}
+
+func (db *deleteBuilder) CounterType() CounterType {
+	return CounterExec
 }
 
 func (db *deleteBuilder) setReturning(keys []any) error {

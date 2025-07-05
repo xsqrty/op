@@ -7,6 +7,7 @@ import (
 )
 
 func TestDelete(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "delete",
@@ -65,6 +66,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteUsingTables(t *testing.T) {
+	t.Parallel()
 	item := Delete("users")
 	tables := item.UsingTables()
 
@@ -73,6 +75,7 @@ func TestDeleteUsingTables(t *testing.T) {
 }
 
 func TestDeleteReturning(t *testing.T) {
+	t.Parallel()
 	item := Delete("users").Returning("id")
 	item.LimitReturningOne()
 
@@ -83,4 +86,5 @@ func TestDeleteReturning(t *testing.T) {
 
 	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
 	require.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
+	require.Equal(t, CounterExec, item.CounterType())
 }

@@ -27,6 +27,7 @@ type SelectBuilder interface {
 	GetReturning() []Alias
 	SetReturning(keys []any) error
 	SetReturningAliases(keys []Alias)
+	CounterType() CounterType
 	PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error)
 	Sql(options *driver.SqlOptions) (sql string, args []any, err error)
 }
@@ -91,6 +92,8 @@ type selectBuilder struct {
 	limit   uint64
 	offset  uint64
 }
+
+var _ Returnable = SelectBuilder(nil)
 
 func Select(fields ...any) SelectBuilder {
 	sb := &selectBuilder{}
@@ -375,6 +378,10 @@ func (sb *selectBuilder) SetReturning(keys []any) error {
 
 func (sb *selectBuilder) SetReturningAliases(keys []Alias) {
 	sb.fields = keys
+}
+
+func (sb *selectBuilder) CounterType() CounterType {
+	return CounterQuery
 }
 
 func (sb *selectBuilder) setFields(fields []any) error {

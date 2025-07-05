@@ -3,21 +3,15 @@ package orm
 import (
 	"context"
 	"github.com/xsqrty/op"
+	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/driver"
 )
 
 type CountBuilder interface {
 	By(key string) CountBuilder
 	ByDistinct(key string) CountBuilder
-	Where(exp driver.Sqler) CountBuilder
-	Join(table any, on driver.Sqler) CountBuilder
-	LeftJoin(table any, on driver.Sqler) CountBuilder
-	RightJoin(table any, on driver.Sqler) CountBuilder
-	InnerJoin(table any, on driver.Sqler) CountBuilder
-	CrossJoin(table any, on driver.Sqler) CountBuilder
-	GroupBy(groups ...any) CountBuilder
 	Log(handler LoggerHandler) CountBuilder
-	With(ctx context.Context, db Queryable) (uint64, error)
+	With(ctx context.Context, db db.QueryExec) (uint64, error)
 }
 
 type countResultModel struct {
@@ -25,7 +19,7 @@ type countResultModel struct {
 }
 
 type count struct {
-	sb         op.SelectBuilder
+	ret        op.Returnable
 	logger     LoggerHandler
 	byColumn   op.Column
 	byDistinct bool
@@ -33,27 +27,18 @@ type count struct {
 
 const totalCountColumn = "total_count"
 
-func Count(table string) CountBuilder {
+func Count(ret op.Returnable) CountBuilder {
 	return &count{
-		sb: op.Select().From(table),
+		ret: ret,
 	}
 }
 
-func (co *count) With(ctx context.Context, db Queryable) (uint64, error) {
-	if !co.byColumn.IsZero() && co.byDistinct {
-		co.sb.SetReturningAliases([]op.Alias{op.As(totalCountColumn, op.CountDistinct(co.byColumn))})
-	} else if !co.byColumn.IsZero() {
-		co.sb.SetReturningAliases([]op.Alias{op.As(totalCountColumn, op.Count(co.byColumn))})
-	} else {
-		co.sb.SetReturningAliases([]op.Alias{op.As(totalCountColumn, op.Count(driver.Pure("*")))})
+func (co *count) With(ctx context.Context, db db.QueryExec) (uint64, error) {
+	if co.ret.CounterType() == op.CounterQuery {
+		return co.getQueryResult(ctx, db)
 	}
 
-	result, err := Query[countResultModel](co.sb).Log(co.logger).GetOne(ctx, db)
-	if err != nil {
-		return 0, err
-	}
-
-	return result.Count, nil
+	return co.getExecResult(ctx, db)
 }
 
 func (co *count) By(key string) CountBuilder {
@@ -70,42 +55,38 @@ func (co *count) ByDistinct(key string) CountBuilder {
 	return co
 }
 
-func (co *count) Where(exp driver.Sqler) CountBuilder {
-	co.sb.Where(exp)
-	return co
-}
-
-func (co *count) Join(table any, on driver.Sqler) CountBuilder {
-	co.sb.Join(table, on)
-	return co
-}
-
-func (co *count) LeftJoin(table any, on driver.Sqler) CountBuilder {
-	co.sb.LeftJoin(table, on)
-	return co
-}
-
-func (co *count) RightJoin(table any, on driver.Sqler) CountBuilder {
-	co.sb.RightJoin(table, on)
-	return co
-}
-
-func (co *count) InnerJoin(table any, on driver.Sqler) CountBuilder {
-	co.sb.InnerJoin(table, on)
-	return co
-}
-
-func (co *count) CrossJoin(table any, on driver.Sqler) CountBuilder {
-	co.sb.CrossJoin(table, on)
-	return co
-}
-
-func (co *count) GroupBy(groups ...any) CountBuilder {
-	co.sb.GroupBy(groups...)
-	return co
-}
-
 func (co *count) Log(lh LoggerHandler) CountBuilder {
 	co.logger = lh
 	return co
+}
+
+func (co *count) getExecResult(ctx context.Context, db Executable) (uint64, error) {
+	result, err := Exec(co.ret).Log(co.logger).With(ctx, db)
+	if err != nil {
+		return 0, err
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(count), nil
+}
+
+func (co *count) getQueryResult(ctx context.Context, db Queryable) (uint64, error) {
+	if !co.byColumn.IsZero() && co.byDistinct {
+		co.ret.SetReturningAliases([]op.Alias{op.As(totalCountColumn, op.CountDistinct(co.byColumn))})
+	} else if !co.byColumn.IsZero() {
+		co.ret.SetReturningAliases([]op.Alias{op.As(totalCountColumn, op.Count(co.byColumn))})
+	} else {
+		co.ret.SetReturningAliases([]op.Alias{op.As(totalCountColumn, op.Count(driver.Pure("*")))})
+	}
+
+	result, err := Query[countResultModel](co.ret).Log(co.logger).GetOne(ctx, db)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.Count, nil
 }

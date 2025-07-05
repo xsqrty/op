@@ -1,32 +1,22 @@
-package cache
+package orm
 
 import (
-	"fmt"
 	"github.com/xsqrty/op"
+	"github.com/xsqrty/op/cache"
 	"github.com/xsqrty/op/driver"
 	"sync"
 )
 
 type ReturnableContainer interface {
-	Use(args Args) Returnable
-}
-
-type Returnable interface {
-	UsingTables() []string
-	With() string
-	GetReturning() []op.Alias
-	SetReturning([]any) error
-	SetReturningAliases([]op.Alias)
-	Sql(options *driver.SqlOptions) (string, []any, error)
-	PreparedSql(options *driver.SqlOptions) (string, []any, error)
-	LimitReturningOne()
+	Use(args cache.Args) op.Returnable
 }
 
 type retContainer struct {
-	res    result
-	ret    Returnable
+	res    cache.Result
+	ret    op.Returnable
 	retErr error
 
+	retM    sync.RWMutex
 	resOnce sync.Once
 	limOnce sync.Once
 	salOnce sync.Once
@@ -34,17 +24,17 @@ type retContainer struct {
 }
 
 type retCache struct {
-	args      Args
+	args      cache.Args
 	container *retContainer
 }
 
-func NewReturnable(input Returnable) ReturnableContainer {
+func NewReturnableCache(input op.Returnable) ReturnableContainer {
 	return &retContainer{
 		ret: input,
 	}
 }
 
-func (rc *retContainer) Use(args Args) Returnable {
+func (rc *retContainer) Use(args cache.Args) op.Returnable {
 	return &retCache{
 		args:      args,
 		container: rc,
@@ -60,11 +50,17 @@ func (rc *retCache) With() string {
 }
 
 func (rc *retCache) GetReturning() []op.Alias {
-	return rc.container.ret.GetReturning()
+	rc.container.retM.RLock()
+	defer rc.container.retM.RUnlock()
+	returning := rc.container.ret.GetReturning()
+
+	return returning
 }
 
 func (rc *retCache) SetReturning(fields []any) error {
 	rc.container.sreOnce.Do(func() {
+		rc.container.retM.Lock()
+		defer rc.container.retM.Unlock()
 		rc.container.retErr = rc.container.ret.SetReturning(fields)
 	})
 
@@ -73,6 +69,9 @@ func (rc *retCache) SetReturning(fields []any) error {
 
 func (rc *retCache) SetReturningAliases(aliases []op.Alias) {
 	rc.container.salOnce.Do(func() {
+		rc.container.retM.Lock()
+		defer rc.container.retM.Unlock()
+
 		rc.container.ret.SetReturningAliases(aliases)
 	})
 }
@@ -81,6 +80,10 @@ func (rc *retCache) LimitReturningOne() {
 	rc.container.limOnce.Do(func() {
 		rc.container.ret.LimitReturningOne()
 	})
+}
+
+func (rc *retCache) CounterType() op.CounterType {
+	return rc.container.ret.CounterType()
 }
 
 func (rc *retCache) Sql(options *driver.SqlOptions) (string, []any, error) {
@@ -92,39 +95,17 @@ func (rc *retCache) PreparedSql(options *driver.SqlOptions) (string, []any, erro
 		sql, args, err := rc.container.ret.PreparedSql(options)
 
 		if err != nil {
-			rc.container.res.err = err
+			rc.container.res.Err = err
 			return
 		}
 
-		rc.container.res.sql = sql
-		rc.container.res.args = args
-		rc.container.res.argsIndexes = make(map[string]int)
-		for i := range rc.container.res.args {
-			if argPair, ok := rc.container.res.args[i].(*arg); ok {
-				rc.container.res.argsIndexes[argPair.key] = i
-			}
-		}
+		cache.PrepareArgs(&rc.container.res, sql, args)
 	})
 
-	if rc.container.res.err != nil {
-		return "", nil, rc.container.res.err
+	args, err := cache.GetArgs(&rc.container.res, rc.args)
+	if err != nil {
+		return "", nil, err
 	}
 
-	if len(rc.container.res.argsIndexes) != len(rc.args) {
-		return "", nil, fmt.Errorf("incorrect argument count")
-	}
-
-	args := make([]any, len(rc.container.res.args))
-	copy(args, rc.container.res.args)
-
-	for k, v := range rc.args {
-		index, ok := rc.container.res.argsIndexes[k]
-		if !ok {
-			return "", nil, fmt.Errorf("no such arg %q inside container", k)
-		}
-
-		args[index] = v
-	}
-
-	return rc.container.res.sql, args, rc.container.res.err
+	return rc.container.res.Sql, args, rc.container.res.Err
 }

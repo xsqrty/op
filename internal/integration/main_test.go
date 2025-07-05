@@ -69,8 +69,10 @@ type MockPostgres struct {
 	Data  MockPostgresData `op:"Data"`
 }
 
-var mockUsers []*MockUser
-var mockCompanies []*MockCompany
+type MockSeeding struct {
+	Users     []*MockUser
+	Companies []*MockCompany
+}
 
 var pgConn db.ConnPool
 var sqliteConn db.ConnPool
@@ -110,48 +112,53 @@ func TestMain(m *testing.M) {
 		log.Fatalf("failed to create sqlite tables: %v", err)
 	}
 
+	m.Run()
+}
+
+func DataSeed(ctx context.Context, qe db.QueryExec) (*MockSeeding, error) {
+	var mockUsers []*MockUser
+	var mockCompanies []*MockCompany
+
+	for i := 0; i < 10; i++ {
+		company := &MockCompany{
+			ID:        i + 1,
+			Name:      gofakeit.Company(),
+			CreatedAt: time.Now(),
+		}
+
+		err := orm.Put[MockCompany](companiesTable, company).With(ctx, qe)
+		if err != nil {
+			return nil, err
+		}
+
+		mockCompanies = append(mockCompanies, company)
+	}
+
 	for i := 0; i < 100; i++ {
-		mockUsers = append(mockUsers, &MockUser{
+		comp := mockCompanies[rand.IntN(len(mockCompanies))]
+		user := &MockUser{
+			ID:        i + 1,
 			Name:      gofakeit.Name(),
 			Email:     gofakeit.Email(),
 			CreatedAt: gofakeit.Date(),
 			DeletedAt: sql.NullTime{Valid: i > 30 && i < 50, Time: gofakeit.Date()},
-		})
-	}
-
-	for i := 0; i < 10; i++ {
-		mockCompanies = append(mockCompanies, &MockCompany{
-			ID:   i + 1,
-			Name: gofakeit.Company(),
-		})
-	}
-
-	m.Run()
-}
-
-func DataSeed(ctx context.Context, qe db.QueryExec) error {
-	for _, company := range mockCompanies {
-		company.CreatedAt = time.Now()
-		err := orm.Put[MockCompany](companiesTable, company).With(ctx, qe)
-		if err != nil {
-			return err
 		}
-	}
 
-	for i, user := range mockUsers {
-		comp := mockCompanies[rand.IntN(len(mockCompanies))]
-		user.CreatedAt = time.Now()
 		if i%2 == 0 {
 			user.CompanyId = sql.NullInt64{Valid: true, Int64: int64(comp.ID)}
 		}
 
 		err := orm.Put[MockUser](usersTable, user).With(ctx, qe)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		mockUsers = append(mockUsers, user)
 	}
 
-	return nil
+	return &MockSeeding{
+		Users:     mockUsers,
+		Companies: mockCompanies,
+	}, nil
 }
 
 func Transact(t *testing.T, ctx context.Context, conn db.ConnPool, handler func(ctx context.Context) error) error {

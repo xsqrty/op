@@ -12,6 +12,7 @@ type Alias interface {
 	Alias() string
 	IsPureColumn() bool
 	Rename(name string)
+	Clone() Alias
 	Sql(*driver.SqlOptions) (string, []any, error)
 }
 
@@ -79,6 +80,14 @@ func (a *alias) Rename(name string) {
 	a.name = name
 	if a.isPureColumn {
 		a.expr = Column(a.name)
+	}
+}
+
+func (a *alias) Clone() Alias {
+	return &alias{
+		name:         a.name,
+		expr:         a.expr,
+		isPureColumn: a.isPureColumn,
 	}
 }
 

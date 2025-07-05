@@ -12,23 +12,24 @@ import (
 )
 
 func TestQuery(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
-			err := DataSeed(ctx, conn)
+			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
 			users, err := orm.Query[MockUser](op.Select().From(usersTable).OrderBy(op.Asc("id"))).GetMany(ctx, conn)
 			require.NoError(t, err)
-			require.Len(t, users, len(mockUsers))
+			require.Len(t, users, len(seed.Users))
 
 			for index, user := range users {
-				require.Equal(t, mockUsers[index].ID, user.ID)
-				require.Equal(t, mockUsers[index].Name, user.Name)
-				require.Equal(t, mockUsers[index].Email, user.Email)
+				require.Equal(t, seed.Users[index].ID, user.ID)
+				require.Equal(t, seed.Users[index].Name, user.Name)
+				require.Equal(t, seed.Users[index].Email, user.Email)
 			}
 
 			deletedUsersCount := 0
-			for _, user := range mockUsers {
+			for _, user := range seed.Users {
 				if user.DeletedAt.Valid {
 					deletedUsersCount++
 				}
@@ -48,14 +49,15 @@ func TestQuery(t *testing.T) {
 }
 
 func TestQueryOne(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
-			err := DataSeed(ctx, conn)
+			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
-			user, err := orm.Query[MockUser](op.Select().From(usersTable).Where(op.Eq("id", 1))).GetOne(ctx, conn)
+			user, err := orm.Query[MockUser](op.Select().From(usersTable).Where(op.Eq("id", seed.Users[0].ID))).GetOne(ctx, conn)
 			require.NoError(t, err)
-			require.Equal(t, mockUsers[0].ID, user.ID)
+			require.Equal(t, seed.Users[0].ID, user.ID)
 
 			user, err = orm.Query[MockUser](op.Select().From(usersTable).Where(op.Eq("id", -1))).GetOne(ctx, conn)
 			require.Nil(t, user)
@@ -67,16 +69,17 @@ func TestQueryOne(t *testing.T) {
 }
 
 func TestQueryDelete(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
-			err := DataSeed(ctx, conn)
+			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
-			usersCount, err := orm.Count(usersTable).With(ctx, conn)
+			usersCount, err := orm.Count(op.Select().From(usersTable)).With(ctx, conn)
 			require.NoError(t, err)
 
 			deletedUsers, err := orm.Query[MockUser](op.Delete(usersTable).Where(op.And{
-				op.In("id", mockUsers[0].ID, mockUsers[1].ID, mockUsers[2].ID),
+				op.In("id", seed.Users[0].ID, seed.Users[1].ID, seed.Users[2].ID),
 				op.Eq("deleted_at", nil),
 			})).GetMany(ctx, conn)
 
@@ -84,12 +87,12 @@ func TestQueryDelete(t *testing.T) {
 			require.Len(t, deletedUsers, 3)
 
 			for i, user := range deletedUsers {
-				require.Equal(t, mockUsers[i].ID, user.ID)
-				require.Equal(t, mockUsers[i].Name, user.Name)
-				require.Equal(t, mockUsers[i].Email, user.Email)
+				require.Equal(t, seed.Users[i].ID, user.ID)
+				require.Equal(t, seed.Users[i].Name, user.Name)
+				require.Equal(t, seed.Users[i].Email, user.Email)
 			}
 
-			newUsersCount, err := orm.Count(usersTable).With(ctx, conn)
+			newUsersCount, err := orm.Count(op.Select().From(usersTable)).With(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, usersCount-3, newUsersCount)
 
@@ -99,15 +102,17 @@ func TestQueryDelete(t *testing.T) {
 }
 
 func TestQueryInsert(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
-			err := DataSeed(ctx, conn)
+			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
-			usersCount, err := orm.Count(usersTable).With(ctx, conn)
+			usersCount, err := orm.Count(op.Select().From(usersTable)).With(ctx, conn)
 			require.NoError(t, err)
 
 			data := op.Inserting{
+				"id":         seed.Users[len(seed.Users)-1].ID + 1,
 				"name":       gofakeit.Name(),
 				"email":      gofakeit.Email(),
 				"created_at": gofakeit.Date(),
@@ -120,7 +125,7 @@ func TestQueryInsert(t *testing.T) {
 			require.Equal(t, data["email"], inserted.Email)
 			require.Equal(t, data["created_at"].(time.Time).UnixMilli(), inserted.CreatedAt.UnixMilli())
 
-			newUsersCount, err := orm.Count(usersTable).With(ctx, conn)
+			newUsersCount, err := orm.Count(op.Select().From(usersTable)).With(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, usersCount+1, newUsersCount)
 
@@ -130,12 +135,13 @@ func TestQueryInsert(t *testing.T) {
 }
 
 func TestQueryUpdate(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
-			err := DataSeed(ctx, conn)
+			_, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
-			deletedCount, err := orm.Count(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, conn)
+			deletedCount, err := orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, conn)
 			require.NoError(t, err)
 			require.Greater(t, deletedCount, uint64(0))
 
@@ -144,7 +150,7 @@ func TestQueryUpdate(t *testing.T) {
 			}).Where(op.Ne("deleted_at", nil))).GetMany(ctx, conn)
 			require.NoError(t, err)
 
-			newDeletedCount, err := orm.Count(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, conn)
+			newDeletedCount, err := orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, uint64(0), newDeletedCount)
 

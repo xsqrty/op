@@ -12,8 +12,9 @@ type mockExecutor struct {
 }
 
 type mockExecResult struct {
-	count  int64
-	lastId int64
+	count     int64
+	lastId    int64
+	rowsError error
 }
 
 func NewMockExecutor() *mockExecutor {
@@ -22,6 +23,10 @@ func NewMockExecutor() *mockExecutor {
 
 func NewMockExecResult(count, lastId int64) *mockExecResult {
 	return &mockExecResult{count: count, lastId: lastId}
+}
+
+func NewMockExecResultAffectedError(err error) *mockExecResult {
+	return &mockExecResult{rowsError: err}
 }
 
 func (m *mockExecutor) Exec(ctx context.Context, sql string, args ...any) (db.ExecResult, error) {
@@ -34,7 +39,7 @@ func (m *mockExecutor) SqlOptions() *driver.SqlOptions {
 }
 
 func (er *mockExecResult) RowsAffected() (int64, error) {
-	return er.count, nil
+	return er.count, er.rowsError
 }
 
 func (er *mockExecResult) LastInsertId() (int64, error) {

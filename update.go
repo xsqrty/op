@@ -15,6 +15,7 @@ type UpdateBuilder interface {
 	GetReturning() []Alias
 	SetReturning(keys []any) error
 	SetReturningAliases(keys []Alias)
+	CounterType() CounterType
 	PreparedSql(options *driver.SqlOptions) (string, []any, error)
 	Sql(options *driver.SqlOptions) (string, []any, error)
 }
@@ -29,6 +30,8 @@ type updateBuilder struct {
 	where         And
 	err           error
 }
+
+var _ Returnable = UpdateBuilder(nil)
 
 func Update(table any, updates Updates) UpdateBuilder {
 	ub := &updateBuilder{}
@@ -147,6 +150,10 @@ func (ub *updateBuilder) SetReturning(keys []any) error {
 
 func (ub *updateBuilder) SetReturningAliases(keys []Alias) {
 	ub.returningKeys = keys
+}
+
+func (ub *updateBuilder) CounterType() CounterType {
+	return CounterExec
 }
 
 func (ub *updateBuilder) setReturning(keys []any) error {

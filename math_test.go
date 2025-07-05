@@ -6,6 +6,7 @@ import (
 )
 
 func TestMath(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "add",

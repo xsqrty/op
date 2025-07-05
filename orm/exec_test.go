@@ -10,6 +10,7 @@ import (
 )
 
 func TestExec(t *testing.T) {
+	t.Parallel()
 	expectedSql := `DELETE FROM "users" WHERE ("id" = ? AND "deleted_at" IS NULL)`
 	expectedArgs := []any{1}
 
@@ -42,6 +43,7 @@ func TestExec(t *testing.T) {
 }
 
 func TestExecError(t *testing.T) {
+	t.Parallel()
 	res, err := Exec(op.Delete("a+b")).With(context.Background(), testutil.NewMockExecutor())
 
 	require.Nil(t, res)

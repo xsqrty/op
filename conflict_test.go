@@ -6,6 +6,7 @@ import (
 )
 
 func TestConflict(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "do_nothing",

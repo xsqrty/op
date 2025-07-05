@@ -6,6 +6,7 @@ import (
 )
 
 func TestArraySql(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "create_postgres_array",
@@ -17,6 +18,7 @@ func TestArraySql(t *testing.T) {
 }
 
 func TestArrayError(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "handle_postgres_array_error",
@@ -29,6 +31,7 @@ func TestArrayError(t *testing.T) {
 }
 
 func TestArrayLength(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "array_length",
@@ -40,6 +43,7 @@ func TestArrayLength(t *testing.T) {
 }
 
 func TestArrayConcat(t *testing.T) {
+	t.Parallel()
 	arrayArgs := []any{"a", 1, []byte{'1', '2', '3'}}
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
@@ -52,6 +56,7 @@ func TestArrayConcat(t *testing.T) {
 }
 
 func TestArrayUnnest(t *testing.T) {
+	t.Parallel()
 	arrayArgs := []any{"a", 1, []byte{'1', '2', '3'}}
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{

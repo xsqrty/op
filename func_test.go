@@ -7,6 +7,7 @@ import (
 )
 
 func TestFunctions(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "custom_1",

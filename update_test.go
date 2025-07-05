@@ -7,6 +7,7 @@ import (
 )
 
 func TestUpdate(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "update",
@@ -87,6 +88,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateUsingTables(t *testing.T) {
+	t.Parallel()
 	item := Update("users", Updates{})
 	tables := item.UsingTables()
 
@@ -95,6 +97,7 @@ func TestUpdateUsingTables(t *testing.T) {
 }
 
 func TestUpdateReturning(t *testing.T) {
+	t.Parallel()
 	item := Update("users", Updates{}).Returning("id")
 	item.LimitReturningOne()
 
@@ -105,4 +108,5 @@ func TestUpdateReturning(t *testing.T) {
 
 	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
 	require.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
+	require.Equal(t, CounterExec, item.CounterType())
 }

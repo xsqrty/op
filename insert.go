@@ -18,6 +18,7 @@ type InsertBuilder interface {
 	GetReturning() []Alias
 	SetReturning(keys []any) error
 	SetReturningAliases(keys []Alias)
+	CounterType() CounterType
 	PreparedSql(options *driver.SqlOptions) (string, []any, error)
 	Sql(options *driver.SqlOptions) (string, []any, error)
 }
@@ -38,6 +39,8 @@ var (
 	ErrNoInsertValues = errors.New("no insert values")
 	ErrForInsertMany  = errors.New("Values/Columns available only for InsertMany")
 )
+
+var _ Returnable = InsertBuilder(nil)
 
 func InsertMany(into any) InsertBuilder {
 	ib := &insertBuilder{many: true}
@@ -213,6 +216,10 @@ func (ib *insertBuilder) SetReturning(keys []any) error {
 
 func (ib *insertBuilder) SetReturningAliases(keys []Alias) {
 	ib.returningKeys = keys
+}
+
+func (ib *insertBuilder) CounterType() CounterType {
+	return CounterExec
 }
 
 func (ib *insertBuilder) setReturning(keys []any) error {

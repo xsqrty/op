@@ -12,6 +12,7 @@ import (
 )
 
 func TestTransact_Commit(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		name := gofakeit.UUID()
 		require.NoError(t, conn.Transact(ctx, func(ctx context.Context) error {
@@ -22,13 +23,14 @@ func TestTransact_Commit(t *testing.T) {
 			return err
 		}))
 
-		count, err := orm.Count(countriesTable).Where(op.Eq("name", name)).With(ctx, conn)
+		count, err := orm.Count(op.Select().From(countriesTable).Where(op.Eq("name", name))).With(ctx, conn)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), count)
 	})
 }
 
 func TestTransact_Rollback(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		name := gofakeit.UUID()
 		err := conn.Transact(ctx, func(ctx context.Context) error {
@@ -58,7 +60,7 @@ func TestTransact_Rollback(t *testing.T) {
 
 			return false
 		})
-		count, err := orm.Count(countriesTable).Where(op.Eq("name", name)).With(ctx, conn)
+		count, err := orm.Count(op.Select().From(countriesTable).Where(op.Eq("name", name))).With(ctx, conn)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), count)
 	})

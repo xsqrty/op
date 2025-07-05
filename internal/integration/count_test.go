@@ -10,20 +10,21 @@ import (
 )
 
 func TestCount(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
-			err := DataSeed(ctx, conn)
+			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
-			count, err := orm.Count(usersTable).With(ctx, conn)
+			count, err := orm.Count(op.Select().From(usersTable)).With(ctx, conn)
 			require.NoError(t, err)
-			require.Equal(t, len(mockUsers), int(count))
+			require.Equal(t, len(seed.Users), int(count))
 
-			company := mockCompanies[0]
+			company := seed.Companies[0]
 			companyCount := 0
 			deletedCount := 0
-			for _, user := range mockUsers {
-				if user.CompanyId.Int64 == int64(company.ID) {
+			for _, user := range seed.Users {
+				if user.CompanyId.Valid && user.CompanyId.Int64 == int64(company.ID) {
 					companyCount++
 				}
 
@@ -32,11 +33,11 @@ func TestCount(t *testing.T) {
 				}
 			}
 
-			count, err = orm.Count(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, conn)
+			count, err = orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, deletedCount, int(count))
 
-			count, err = orm.Count(usersTable).LeftJoin(companiesTable, op.Eq("companies.id", op.Column("users.company_id"))).Where(op.Eq("companies.name", company.Name)).With(ctx, conn)
+			count, err = orm.Count(op.Select().From(usersTable).LeftJoin(companiesTable, op.Eq("companies.id", op.Column("users.company_id"))).Where(op.Eq("companies.id", company.ID))).With(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, companyCount, int(count))
 

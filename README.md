@@ -24,7 +24,7 @@ go get github.com/xsqrty/op
     - [Delete rows](#delete-rows)
   - [Put row](#put-row)
   - [Count rows](#count-rows)
-  - [Pagination](#pagination)
+  - [Pagination](#pagination)Count rows
 - [Build SQL](#build-sql)
   - [Select builder](#select-builder)
   - [Insert builder](#insert-builder)
@@ -37,6 +37,7 @@ go get github.com/xsqrty/op
   - [Query](#query)
   - [Exec](#exec)
   - [Transactions](#transactions)
+- [Caching and optimization](#caching-and-optimization)
 
 # Quick start
 
@@ -370,23 +371,18 @@ err := orm.Put("users", user).With(ctx, pool)
 
 * By(key string) CountBuilder - explicitly specify the key for `COUNT("key")`, by default `COUNT(*)`
 * ByDistinct(key string) CountBuilder - explicitly specify the key (with distinct) for `COUNT(DISTINCT "key")`
-* Where(exp driver.Sqler) CountBuilder - `WHERE` clause
-* Join(table any, on driver.Sqler) CountBuilder - join
-* LeftJoin(table any, on driver.Sqler) CountBuilder - left join
-* RightJoin(table any, on driver.Sqler) CountBuilder - right join
-* InnerJoin(table any, on driver.Sqler) CountBuilder - inner join
-* CrossJoin(table any, on driver.Sqler) CountBuilder - cross join
-* GroupBy(groups ...any) CountBuilder - `GROUP BY` clause
 * Log(handler LoggerHandler) CountBuilder - register SQL logger
 * With(ctx context.Context, db Queryable) (uint64, error) - exec query and get result
 
 ```go
-count, err := orm.Count("roles_users").
-  Join("roles", op.Eq("role_id", op.Column("roles.id"))).
-  Where(op.And{
-    op.Eq("user_id", u.ID),
-    op.Lc("permissions", []string{"read", "write"}),
-  }).With(ctx, pool)
+count, err := orm.Count(
+  op.Select().From("roles_users").
+    Join("roles", op.Eq("role_id", op.Column("roles.id"))).
+    Where(op.And{
+      op.Eq("user_id", u.ID),
+      op.Lc("permissions", []string{"read", "write"}),
+    }),
+  ).With(ctx, pool)
 ```
 
 ## Pagination
@@ -819,3 +815,44 @@ err := conn.Transact(ctx, func (ctx context.Context) error {
   return err
 })
 ```
+
+# Caching and optimization
+
+If you need to perform a heavy query, then building SQL may take some time.
+
+You can use a query caching tool `cache.New()` for native usage or `orm.NewReturnableCache` for use with orm
+
+```go
+options := driver.NewPostgresSqlOptions()
+getById := cache.New(
+  op.Select().
+    From("users").
+    Where(op.Eq("id", cache.Arg("id")))
+)
+
+for id := 1; id <= 10; id++ {
+  getById.Use(Args{"id": id}).Sql(options)
+}
+```
+
+First you need to create a cache container `cache.New()` in which it is necessary to designate arguments `cache.Args()`
+
+Then you can use the container `container.Use()` by specifying the argument values `cache.Args{}`
+
+```go
+getById := orm.NewReturnableCache(
+  op.Select().From("users").Where(op.Eq("id", cache.Arg("id")))
+)
+
+for id := 1; id <= 10; id++ {
+  user, err := orm.Query[User](getById.Use(cache.Args{
+    "id": id,
+  })).GetOne(ctx, conn)
+}
+```
+
+For ORM you need to use a special cache container `orm.NewReturnableCache()`.
+
+This container supports `orm.Count` `orm.Exec` `orm.Query`
+
+`orm.Put` already implements caching

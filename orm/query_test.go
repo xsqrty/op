@@ -17,6 +17,7 @@ type QueryMockUser struct {
 }
 
 func TestGetMany(t *testing.T) {
+	t.Parallel()
 	expectedSql := `SELECT "users"."id","users"."name" FROM "users" WHERE "users"."id" = ?`
 	expectedArgs := []any{1}
 
@@ -33,7 +34,7 @@ func TestGetMany(t *testing.T) {
 		require.Equal(t, expectedArgs, args)
 		require.Equal(t, expectedSql, sql)
 	}).GetMany(context.Background(), query)
-	
+
 	require.NoError(t, err)
 	require.Len(t, users, 2)
 
@@ -45,6 +46,7 @@ func TestGetMany(t *testing.T) {
 }
 
 func TestGetOne(t *testing.T) {
+	t.Parallel()
 	expectedSql := `SELECT "users"."id","users"."name" FROM "users" WHERE "users"."id" = ? LIMIT ?`
 	expectedArgs := []any{100, uint64(1)}
 
@@ -65,6 +67,7 @@ func TestGetOne(t *testing.T) {
 }
 
 func TestGetOneError(t *testing.T) {
+	t.Parallel()
 	query := testutil.NewMockQueryable()
 	query.
 		On("QueryRow", mock.Anything, `SELECT "users"."id","users"."name" FROM "users" LIMIT ?`, []any{uint64(1)}).
@@ -76,6 +79,7 @@ func TestGetOneError(t *testing.T) {
 }
 
 func TestGetOneSqlError(t *testing.T) {
+	t.Parallel()
 	query := testutil.NewMockQueryable()
 	user, err := Query[QueryMockUser](op.Select().From("users").Where(op.Eq("a+b", 1))).GetOne(context.Background(), query)
 	require.Nil(t, user)
@@ -83,6 +87,7 @@ func TestGetOneSqlError(t *testing.T) {
 }
 
 func TestGetOneModelError(t *testing.T) {
+	t.Parallel()
 	query := testutil.NewMockQueryable()
 	user, err := Query[QueryMockUser](op.Select("undefined").From("users")).GetOne(context.Background(), query)
 	require.Nil(t, user)

@@ -7,6 +7,7 @@ import (
 )
 
 func TestColumn(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "column",
@@ -34,6 +35,7 @@ func TestColumn(t *testing.T) {
 }
 
 func TestAlias(t *testing.T) {
+	t.Parallel()
 	al := ColumnAlias("target")
 	al.Rename("table.target")
 

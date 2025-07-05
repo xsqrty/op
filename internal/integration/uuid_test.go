@@ -12,6 +12,7 @@ import (
 )
 
 func TestUUID(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, conn.Transact(ctx, func(ctx context.Context) error {
 			id := uuid.Must(uuid.NewV7())

@@ -3,6 +3,7 @@ package orm
 import (
 	"errors"
 	"fmt"
+	"github.com/xsqrty/op"
 	"reflect"
 	"strings"
 	"sync"
@@ -221,8 +222,10 @@ func prepareModelQuery[T any](q *query[T], target *T) (*modelDetails, []string, 
 			return nil, nil, err
 		}
 	} else {
+		resultAliases := make([]op.Alias, len(retAliases))
 		for i := 0; i < len(retAliases); i++ {
-			aliasValue := retAliases[i].Alias()
+			resultAliases[i] = retAliases[i].Clone()
+			aliasValue := resultAliases[i].Alias()
 
 			if _, ok := data.setters[aliasValue]; !ok {
 				aliases := findAliasFullName(q, data, aliasValue)
@@ -233,13 +236,15 @@ func prepareModelQuery[T any](q *query[T], target *T) (*modelDetails, []string, 
 				}
 
 				aliasValue = aliases[0]
-				if retAliases[i].IsPureColumn() {
-					retAliases[i].Rename(aliases[0])
+				if resultAliases[i].IsPureColumn() {
+					resultAliases[i].Rename(aliases[0])
 				}
 			}
 
 			keys = append(keys, aliasValue)
 		}
+
+		q.ret.SetReturningAliases(resultAliases)
 	}
 
 	return data, keys, nil

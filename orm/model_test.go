@@ -24,6 +24,7 @@ type MockModel struct {
 }
 
 func TestGetModelDetails(t *testing.T) {
+	t.Parallel()
 	for _, table := range []string{"users", "interventions"} {
 		details, err := getModelDetails(table, &MockModel{})
 
@@ -120,6 +121,7 @@ func TestGetModelDetails(t *testing.T) {
 }
 
 func TestGetSettersKeysByTags(t *testing.T) {
+	t.Parallel()
 	table := "users"
 	details, _ := getModelDetails(table, &MockModel{})
 	setters, err := getSettersKeysByTags(details, table, []string{"id", "name"})
@@ -136,6 +138,7 @@ func TestGetSettersKeysByTags(t *testing.T) {
 }
 
 func TestGetSettersKeysByFields(t *testing.T) {
+	t.Parallel()
 	table := "users"
 	model := &MockModel{}
 

@@ -49,7 +49,7 @@ func (p *put[T]) Log(lh LoggerHandler) PutBuilder[T] {
 	return p
 }
 
-func (p *put[T]) getReturnable() (Returnable, error) {
+func (p *put[T]) getReturnable() (op.Returnable, error) {
 	md, err := getModelDetails(p.table, p.item)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (p *put[T]) getReturnable() (Returnable, error) {
 	}
 
 	args := cache.Args{}
-	useId := true
+	usePrimaryKey := true
 
 	for i := range fields {
 		if md.tagsDetails[p.table][fields[i]].isAggregated {
@@ -83,26 +83,26 @@ func (p *put[T]) getReturnable() (Returnable, error) {
 		}
 
 		if fields[i] == md.primaryAsTag && pointers[i] != nil && reflect.ValueOf(pointers[i]).Elem().IsZero() {
-			useId = false
+			usePrimaryKey = false
 			continue
 		}
 
 		args[fields[i]] = reflect.ValueOf(pointers[i]).Elem().Interface()
 	}
 
-	return p.getCache(md, pointers, fields, useId).Use(args), nil
+	return p.getCache(md, pointers, fields, usePrimaryKey).Use(args), nil
 }
 
-func (p *put[T]) getCache(md *modelDetails, pointers []any, fields []string, useId bool) cache.ReturnableContainer {
+func (p *put[T]) getCache(md *modelDetails, pointers []any, fields []string, usePrimaryKey bool) ReturnableContainer {
 	cacheKey := p.table
-	if useId {
-		cacheKey += "_id"
+	if usePrimaryKey {
+		cacheKey += "_primary"
 	}
 
 	typ := reflect.ValueOf(p.item).Type()
 	if cachedMap, ok := putCache.Load(cacheKey); ok {
 		if cacheInner, ok := cachedMap.(*sync.Map).Load(typ); ok {
-			return cacheInner.(cache.ReturnableContainer)
+			return cacheInner.(ReturnableContainer)
 		}
 	}
 
@@ -127,7 +127,7 @@ func (p *put[T]) getCache(md *modelDetails, pointers []any, fields []string, use
 	insert := op.Insert(p.table, inserting).OnConflict(md.primaryAsTag, op.DoUpdate(updates))
 	insert.SetReturningAliases(aliases)
 
-	result := cache.NewReturnable(insert)
+	result := NewReturnableCache(insert)
 	inner, _ := putCache.LoadOrStore(cacheKey, &sync.Map{})
 	inner.(*sync.Map).Store(typ, result)
 

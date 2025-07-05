@@ -11,6 +11,7 @@ import (
 )
 
 func TestPostgresSpecial(t *testing.T) {
+	t.Parallel()
 	require.Equal(t, errRollback, pgConn.Transact(ctx, func(ctx context.Context) error {
 		id := uuid.Must(uuid.NewV7())
 		roles := []string{gofakeit.Name(), gofakeit.Name(), gofakeit.Name(), gofakeit.Name()}

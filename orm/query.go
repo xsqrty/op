@@ -11,18 +11,7 @@ type QueryBuilder[T any] interface {
 	GetOne(ctx context.Context, db Queryable) (*T, error)
 	GetMany(ctx context.Context, db Queryable) ([]*T, error)
 	Log(LoggerHandler) QueryBuilder[T]
-	wrap(name string, wrap op.SelectBuilder) QueryBuilder[T]
-}
-
-type Returnable interface {
-	UsingTables() []string
-	With() string
-	GetReturning() []op.Alias
-	SetReturning([]any) error
-	SetReturningAliases([]op.Alias)
-	Sql(options *driver.SqlOptions) (string, []any, error)
-	PreparedSql(options *driver.SqlOptions) (string, []any, error)
-	LimitReturningOne()
+	Wrap(name string, wrap op.SelectBuilder) QueryBuilder[T]
 }
 
 type Queryable interface {
@@ -33,7 +22,7 @@ type Queryable interface {
 
 type query[T any] struct {
 	with        string
-	ret         Returnable
+	ret         op.Returnable
 	logger      LoggerHandler
 	wrapper     *wrapper
 	aliasMapper func(op.Alias)
@@ -45,7 +34,7 @@ type wrapper struct {
 	sb   op.SelectBuilder
 }
 
-func Query[T any](ret Returnable) QueryBuilder[T] {
+func Query[T any](ret op.Returnable) QueryBuilder[T] {
 	return &query[T]{
 		usingTables: ret.UsingTables(),
 		with:        ret.With(),
@@ -122,7 +111,7 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 	return result, nil
 }
 
-func (q *query[T]) wrap(name string, wrap op.SelectBuilder) QueryBuilder[T] {
+func (q *query[T]) Wrap(name string, wrap op.SelectBuilder) QueryBuilder[T] {
 	q.wrapper = &wrapper{name: name, sb: wrap}
 	return q
 }

@@ -21,6 +21,7 @@ type PutMockTagsDetails struct {
 }
 
 func TestPut(t *testing.T) {
+	t.Parallel()
 	expectedSql := `INSERT INTO "users" ("name") VALUES (?) ON CONFLICT ("id") DO UPDATE SET "name"=EXCLUDED."name" RETURNING "users"."id","users"."name"`
 	expectedArgs := []any{"Alex"}
 
@@ -29,23 +30,26 @@ func TestPut(t *testing.T) {
 		On("QueryRow", mock.Anything, expectedSql, expectedArgs).
 		Return(testutil.NewMockRow(nil, []any{100, "Bob"}))
 
-	user := &PutMockUser{
-		Name: "Alex",
-	}
+	for i := 0; i < 2; i++ {
+		user := &PutMockUser{
+			Name: "Alex",
+		}
 
-	require.Equal(t, 0, user.ID)
-	err := Put[PutMockUser]("users", user).Log(func(sql string, args []any, err error) {
+		require.Equal(t, 0, user.ID)
+		err := Put[PutMockUser]("users", user).Log(func(sql string, args []any, err error) {
+			require.NoError(t, err)
+			require.Equal(t, expectedSql, sql)
+			require.Equal(t, expectedArgs, args)
+		}).With(context.Background(), query)
+
 		require.NoError(t, err)
-		require.Equal(t, expectedSql, sql)
-		require.Equal(t, expectedArgs, args)
-	}).With(context.Background(), query)
-
-	require.NoError(t, err)
-	require.Equal(t, 100, user.ID)
-	require.Equal(t, "Bob", user.Name)
+		require.Equal(t, 100, user.ID)
+		require.Equal(t, "Bob", user.Name)
+	}
 }
 
 func TestPutTagsDetails(t *testing.T) {
+	t.Parallel()
 	expectedSql := `INSERT INTO "users" ("name") VALUES (?) ON CONFLICT ("id") DO UPDATE SET "name"=EXCLUDED."name" RETURNING "users"."id","users"."name"`
 	expectedArgs := []any{"Alex"}
 

@@ -13,15 +13,16 @@ import (
 )
 
 func TestPut(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
-			err := DataSeed(ctx, conn)
+			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
 			updatedAt := gofakeit.Date()
 			createdAt := gofakeit.Date()
 
-			u := mockUsers[len(mockUsers)-1]
+			u := seed.Users[len(seed.Users)-1]
 			u.Name = "Rename user"
 			u.CreatedAt = createdAt
 			u.UpdatedAt = driver.ZeroTime(updatedAt)
@@ -32,7 +33,7 @@ func TestPut(t *testing.T) {
 			fromDb, err := orm.Query[MockUser](op.Select().From(usersTable).Where(op.Eq("name", "Rename user"))).GetOne(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, u, fromDb)
-			require.Equal(t, createdAt.UnixMilli(), time.Time(fromDb.CreatedAt).UnixMilli())
+			require.Equal(t, createdAt.UnixMilli(), fromDb.CreatedAt.UnixMilli())
 			require.Equal(t, updatedAt.UnixMilli(), time.Time(fromDb.UpdatedAt).UnixMilli())
 
 			return errRollback
@@ -41,6 +42,7 @@ func TestPut(t *testing.T) {
 }
 
 func TestPutIds(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
 			id := 1000

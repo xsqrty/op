@@ -20,6 +20,7 @@ func RunCases(t *testing.T, options *driver.SqlOptions, testCases []TestCase) {
 	t.Helper()
 	for _, c := range testCases {
 		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
 			ops := options
 			if c.SqlOptions != nil {
 				ops = c.SqlOptions

@@ -13,12 +13,13 @@ import (
 )
 
 func TestExec(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
-			err := DataSeed(ctx, conn)
+			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
-			count, err := orm.Count(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, conn)
+			count, err := orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, conn)
 			require.NoError(t, err)
 			require.Greater(t, count, uint64(0))
 
@@ -29,7 +30,7 @@ func TestExec(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, count, uint64(rowsCount))
 
-			count, err = orm.Count(usersTable).Where(op.Ne("deleted_at", nil)).With(ctx, conn)
+			count, err = orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, uint64(0), count)
 
@@ -38,6 +39,7 @@ func TestExec(t *testing.T) {
 			createdAt := time.Now()
 
 			event, err = orm.Exec(op.Insert(usersTable, op.Inserting{
+				"id":         seed.Users[len(seed.Users)-1].ID + 1,
 				"name":       name,
 				"email":      email,
 				"created_at": createdAt,
@@ -60,7 +62,8 @@ func TestExec(t *testing.T) {
 				require.Equal(t, createdAt.Unix(), user.CreatedAt.Unix())
 			}
 
-			event, err = orm.Exec(op.InsertMany(usersTable).Columns("name", "email").Values(gofakeit.Name(), gofakeit.Email()).Values(gofakeit.Name(), gofakeit.Email())).With(ctx, conn)
+			lastId = int64(seed.Users[len(seed.Users)-1].ID + 1)
+			event, err = orm.Exec(op.InsertMany(usersTable).Columns("id", "name", "email").Values(lastId+1, gofakeit.Name(), gofakeit.Email()).Values(lastId+2, gofakeit.Name(), gofakeit.Email())).With(ctx, conn)
 			require.NoError(t, err)
 
 			rowsCount, err = event.RowsAffected()

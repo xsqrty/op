@@ -10,7 +10,6 @@ type QueryExec interface {
 	Exec(ctx context.Context, sql string, args ...any) (ExecResult, error)
 	Query(ctx context.Context, sql string, args ...any) (Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) Row
-	Sql(driver.Sqler) (string, []any, error)
 	SqlOptions() *driver.SqlOptions
 }
 

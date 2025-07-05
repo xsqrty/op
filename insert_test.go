@@ -7,6 +7,7 @@ import (
 )
 
 func TestInsert(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name: "insert",
@@ -141,6 +142,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestInsertUsingTables(t *testing.T) {
+	t.Parallel()
 	item := Insert("users", Inserting{})
 	tables := item.UsingTables()
 
@@ -149,6 +151,7 @@ func TestInsertUsingTables(t *testing.T) {
 }
 
 func TestInsertReturning(t *testing.T) {
+	t.Parallel()
 	item := Insert("users", Inserting{}).Returning("id")
 	item.LimitReturningOne()
 
@@ -159,4 +162,5 @@ func TestInsertReturning(t *testing.T) {
 
 	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
 	require.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
+	require.Equal(t, CounterExec, item.CounterType())
 }

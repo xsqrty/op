@@ -15,6 +15,7 @@ type orderCase struct {
 }
 
 func TestSelect(t *testing.T) {
+	t.Parallel()
 	testutil.RunCases(t, options, []testutil.TestCase{
 		{
 			Name:         "select",
@@ -221,6 +222,7 @@ func TestSelect(t *testing.T) {
 }
 
 func TestSelectUsingTables(t *testing.T) {
+	t.Parallel()
 	item := Select().From("users").Join("roles", Eq("user_id", "users.id"))
 	tables := item.UsingTables()
 
@@ -229,6 +231,7 @@ func TestSelectUsingTables(t *testing.T) {
 }
 
 func TestSelectReturning(t *testing.T) {
+	t.Parallel()
 	item := Select("id").From("users")
 	item.LimitReturningOne()
 
@@ -239,9 +242,11 @@ func TestSelectReturning(t *testing.T) {
 
 	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
 	require.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
+	require.Equal(t, CounterQuery, item.CounterType())
 }
 
 func TestOrder(t *testing.T) {
+	t.Parallel()
 	orderCases := []orderCase{
 		{
 			builder:        Asc("age"),

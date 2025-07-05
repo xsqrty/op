@@ -22,9 +22,10 @@ type PaginateMockUser struct {
 }
 
 func TestPaginate(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
-			err := DataSeed(ctx, conn)
+			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
 			reqString := `{
@@ -58,7 +59,7 @@ func TestPaginate(t *testing.T) {
 				With(ctx, conn)
 
 			deletedCount := 0
-			for _, user := range mockUsers {
+			for _, user := range seed.Users {
 				if user.DeletedAt.Valid {
 					deletedCount++
 				}
@@ -71,7 +72,7 @@ func TestPaginate(t *testing.T) {
 			if res.TotalRows > 0 {
 				for _, row := range res.Rows {
 					if row.CompanyName != "" {
-						company := mockCompanies[int(row.CompanyId)-1]
+						company := seed.Companies[int(row.CompanyId)-1]
 						require.Equal(t, company.ID, int(row.CompanyId))
 						require.Equal(t, company.Name, string(row.CompanyName))
 					}
@@ -84,9 +85,9 @@ func TestPaginate(t *testing.T) {
 				}
 			}
 
-			startId := mockUsers[0].ID
-			users := make([]*MockUser, len(mockUsers))
-			copy(users, mockUsers)
+			startId := seed.Users[0].ID
+			users := make([]*MockUser, len(seed.Users))
+			copy(users, seed.Users)
 
 			slices.SortFunc(users, func(u1 *MockUser, u2 *MockUser) int {
 				return u2.ID - u1.ID
