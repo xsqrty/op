@@ -6,8 +6,8 @@ on:
     branches: [ 'main' ]
 jobs:
   test:
-    name: Run tests, upload coverage
-    runs-on: ubuntu-latest
+    name: Run tests
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -25,6 +25,22 @@ jobs:
 
       - name: Display total coverage
         run: echo Total coverage $(go tool cover -func=coverage.out | tail -n 1 | awk '{print $3}')
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+
+  coverage-upload:
+    name: Upload coverage
+    runs-on: ubuntu-22.04
+    needs: test
+    steps:
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
 
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
