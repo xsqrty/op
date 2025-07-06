@@ -120,6 +120,10 @@ func (rr *rowsResult) Rows() iter.Seq2[int, Scanner] {
 	}
 }
 
+func (rr *rowsResult) Columns() ([]string, error) {
+	return rr.rows.Columns()
+}
+
 func (rr *rowsResult) Close() {
 	rr.rows.Close()
 }

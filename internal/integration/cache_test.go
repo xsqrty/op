@@ -25,7 +25,7 @@ func TestCache(t *testing.T) {
 				id := uuid.Must(uuid.NewV7())
 				label := gofakeit.Name()
 
-				err := orm.Put[MockLabel](labelsTable, &MockLabel{
+				err := orm.Put(labelsTable, &MockLabel{
 					ID:    id,
 					Label: label,
 				}).With(ctx, conn)

@@ -25,6 +25,11 @@ func (zt ZeroTime) IsZero() bool {
 	return time.Time(zt).IsZero()
 }
 
+// Time return time.Time
+func (zt ZeroTime) Time() time.Time {
+	return time.Time(zt)
+}
+
 // MarshalJSON implements the [encoding/json.Marshaler] interface.
 func (zt ZeroTime) MarshalJSON() ([]byte, error) {
 	return time.Time(zt).MarshalJSON()

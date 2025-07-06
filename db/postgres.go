@@ -124,6 +124,16 @@ func (pr *pgxRows) Rows() iter.Seq2[int, Scanner] {
 	}
 }
 
+func (pr *pgxRows) Columns() ([]string, error) {
+	fields := pr.rows.FieldDescriptions()
+	columns := make([]string, len(fields))
+	for i, f := range fields {
+		columns[i] = f.Name
+	}
+
+	return columns, nil
+}
+
 func (pr *pgxRows) Close() {
 	pr.rows.Close()
 }

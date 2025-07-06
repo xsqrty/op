@@ -80,6 +80,10 @@ func (ms *mockRow) Scan(dest ...any) error {
 
 func (mr *mockRows) Close() {}
 
+func (mr *mockRows) Columns() ([]string, error) {
+	return nil, nil
+}
+
 func (mr *mockRows) Err() error {
 	return mr.err
 }

@@ -36,7 +36,7 @@ func TestPut(t *testing.T) {
 		}
 
 		require.Equal(t, 0, user.ID)
-		err := Put[PutMockUser]("users", user).Log(func(sql string, args []any, err error) {
+		err := Put("users", user).Log(func(sql string, args []any, err error) {
 			require.NoError(t, err)
 			require.Equal(t, expectedSql, sql)
 			require.Equal(t, expectedArgs, args)
@@ -63,7 +63,7 @@ func TestPutTagsDetails(t *testing.T) {
 	}
 
 	require.Equal(t, 0, user.ID)
-	err := Put[PutMockTagsDetails]("users", user).Log(func(sql string, args []any, err error) {
+	err := Put("users", user).Log(func(sql string, args []any, err error) {
 		require.NoError(t, err)
 		require.Equal(t, expectedArgs, args)
 		require.Equal(t, expectedSql, sql)

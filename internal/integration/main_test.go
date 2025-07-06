@@ -54,8 +54,9 @@ type MockCountry struct {
 }
 
 type MockLabel struct {
-	ID    uuid.UUID `op:"ID,primary"`
-	Label string    `op:"Label"`
+	ID        uuid.UUID       `op:"ID,primary"`
+	Label     string          `op:"Label"`
+	DeletedAt driver.ZeroTime `op:"DeletedAt"`
 }
 
 type MockPostgresData struct {
@@ -126,7 +127,7 @@ func DataSeed(ctx context.Context, qe db.QueryExec) (*MockSeeding, error) {
 			CreatedAt: time.Now(),
 		}
 
-		err := orm.Put[MockCompany](companiesTable, company).With(ctx, qe)
+		err := orm.Put(companiesTable, company).With(ctx, qe)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +149,7 @@ func DataSeed(ctx context.Context, qe db.QueryExec) (*MockSeeding, error) {
 			user.CompanyId = sql.NullInt64{Valid: true, Int64: int64(comp.ID)}
 		}
 
-		err := orm.Put[MockUser](usersTable, user).With(ctx, qe)
+		err := orm.Put(usersTable, user).With(ctx, qe)
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +213,8 @@ func createPostgresTables(ctx context.Context, pool db.ConnPool) error {
 	_, err = pool.Exec(ctx, fmt.Sprintf(`
 		create table "%s" (
 			"ID" uuid PRIMARY KEY,
-			"Label" text not null
+			"Label" text not null,
+			"DeletedAt" timestamptz
 		)
 	`, labelsTable))
 	if err != nil {
@@ -273,7 +275,8 @@ func createSqliteTables(ctx context.Context, pool db.ConnPool) error {
 	_, err = pool.Exec(ctx, fmt.Sprintf(`
 		create table %s (
 			ID text PRIMARY KEY,
-			Label text not null
+			Label text not null,
+			DeletedAt datetime
 		)
 	`, labelsTable))
 	if err != nil {
@@ -316,6 +319,7 @@ func connectPostgres(ctx context.Context, dsn string) (db.ConnPool, error) {
 }
 
 func connectSqlite(ctx context.Context, dsn string) (db.ConnPool, error) {
+	os.Remove(dsn)
 	pool, err := db.OpenSqlite(
 		ctx,
 		dsn,

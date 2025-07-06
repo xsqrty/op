@@ -16,7 +16,7 @@ func TestTransact_Commit(t *testing.T) {
 	EachConn(t, func(conn db.ConnPool) {
 		name := gofakeit.UUID()
 		require.NoError(t, conn.Transact(ctx, func(ctx context.Context) error {
-			err := orm.Put[MockCountry](countriesTable, &MockCountry{
+			err := orm.Put(countriesTable, &MockCountry{
 				Name: name,
 			}).With(ctx, conn)
 
@@ -34,7 +34,7 @@ func TestTransact_Rollback(t *testing.T) {
 	EachConn(t, func(conn db.ConnPool) {
 		name := gofakeit.UUID()
 		err := conn.Transact(ctx, func(ctx context.Context) error {
-			err := orm.Put[MockCountry](countriesTable, &MockCountry{
+			err := orm.Put(countriesTable, &MockCountry{
 				Name: name,
 			}).With(ctx, conn)
 
@@ -42,7 +42,7 @@ func TestTransact_Rollback(t *testing.T) {
 				return err
 			}
 
-			err = orm.Put[MockCountry](countriesTable, &MockCountry{
+			err = orm.Put(countriesTable, &MockCountry{
 				Name: name,
 			}).With(ctx, conn)
 

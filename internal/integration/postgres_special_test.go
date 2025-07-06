@@ -20,7 +20,7 @@ func TestPostgresSpecial(t *testing.T) {
 			Age:  gofakeit.Int(),
 		}
 
-		err := orm.Put[MockPostgres](pgSpecialTable, &MockPostgres{
+		err := orm.Put(pgSpecialTable, &MockPostgres{
 			ID:    id,
 			Roles: roles,
 			Data:  data,

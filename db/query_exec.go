@@ -29,5 +29,6 @@ type Row interface {
 type Rows interface {
 	Close()
 	Rows() iter.Seq2[int, Scanner]
+	Columns() ([]string, error)
 	Err() error
 }

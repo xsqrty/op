@@ -48,13 +48,13 @@ func TestPutIds(t *testing.T) {
 			id := 1000
 
 			companyNoId := &MockCompany{Name: gofakeit.Name()}
-			err := orm.Put[MockCompany](companiesTable, companyNoId).With(ctx, conn)
+			err := orm.Put(companiesTable, companyNoId).With(ctx, conn)
 
 			require.NoError(t, err)
 			require.NotEmpty(t, companyNoId)
 
 			companyWithId := &MockCompany{Name: gofakeit.Name(), ID: id}
-			err = orm.Put[MockCompany](companiesTable, companyWithId).With(ctx, conn)
+			err = orm.Put(companiesTable, companyWithId).With(ctx, conn)
 
 			require.NoError(t, err)
 			require.Equal(t, id, companyWithId.ID)
