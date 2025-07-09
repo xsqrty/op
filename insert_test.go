@@ -152,15 +152,17 @@ func TestInsertUsingTables(t *testing.T) {
 
 func TestInsertReturning(t *testing.T) {
 	t.Parallel()
-	item := Insert("users", Inserting{}).Returning("id")
+	item := Insert("users", Inserting{"key": "value"}).Returning("id")
 	item.LimitReturningOne()
 
 	require.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
 
-	item.SetReturning([]any{"id", "age"})
-	require.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
-
-	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
+	item.SetReturning([]Alias{ColumnAlias("col2")})
 	require.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
 	require.Equal(t, CounterExec, item.CounterType())
+
+	sql, args, err := item.PreparedSql(testutil.NewDefaultOptions())
+	require.NoError(t, err)
+	require.Equal(t, `INSERT INTO "users" ("key") VALUES (?) RETURNING "col2"`, sql)
+	require.Equal(t, []any{"value"}, args)
 }

@@ -13,8 +13,7 @@ type DeleteBuilder interface {
 	With() string
 	UsingTables() []string
 	GetReturning() []Alias
-	SetReturning(keys []any) error
-	SetReturningAliases(keys []Alias)
+	SetReturning(keys []Alias)
 	CounterType() CounterType
 	PreparedSql(options *driver.SqlOptions) (string, []any, error)
 	Sql(options *driver.SqlOptions) (string, []any, error)
@@ -121,11 +120,7 @@ func (db *deleteBuilder) GetReturning() []Alias {
 	return db.returningKeys
 }
 
-func (db *deleteBuilder) SetReturning(keys []any) error {
-	return db.setReturning(keys)
-}
-
-func (db *deleteBuilder) SetReturningAliases(keys []Alias) {
+func (db *deleteBuilder) SetReturning(keys []Alias) {
 	db.returningKeys = keys
 }
 

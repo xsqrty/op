@@ -13,8 +13,7 @@ type UpdateBuilder interface {
 	With() string
 	UsingTables() []string
 	GetReturning() []Alias
-	SetReturning(keys []any) error
-	SetReturningAliases(keys []Alias)
+	SetReturning(keys []Alias)
 	CounterType() CounterType
 	PreparedSql(options *driver.SqlOptions) (string, []any, error)
 	Sql(options *driver.SqlOptions) (string, []any, error)
@@ -144,11 +143,7 @@ func (ub *updateBuilder) GetReturning() []Alias {
 	return ub.returningKeys
 }
 
-func (ub *updateBuilder) SetReturning(keys []any) error {
-	return ub.setReturning(keys)
-}
-
-func (ub *updateBuilder) SetReturningAliases(keys []Alias) {
+func (ub *updateBuilder) SetReturning(keys []Alias) {
 	ub.returningKeys = keys
 }
 

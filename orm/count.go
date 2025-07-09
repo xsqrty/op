@@ -76,11 +76,11 @@ func (co *count) getExecResult(ctx context.Context, db Executable) (uint64, erro
 
 func (co *count) getQueryResult(ctx context.Context, db Queryable) (uint64, error) {
 	if !co.byColumn.IsZero() && co.byDistinct {
-		co.ret.SetReturningAliases([]op.Alias{op.As(totalCountColumn, op.CountDistinct(co.byColumn))})
+		co.ret.SetReturning([]op.Alias{op.As(totalCountColumn, op.CountDistinct(co.byColumn))})
 	} else if !co.byColumn.IsZero() {
-		co.ret.SetReturningAliases([]op.Alias{op.As(totalCountColumn, op.Count(co.byColumn))})
+		co.ret.SetReturning([]op.Alias{op.As(totalCountColumn, op.Count(co.byColumn))})
 	} else {
-		co.ret.SetReturningAliases([]op.Alias{op.As(totalCountColumn, op.Count(driver.Pure("*")))})
+		co.ret.SetReturning([]op.Alias{op.As(totalCountColumn, op.Count(driver.Pure("*")))})
 	}
 
 	result, err := Query[countResultModel](co.ret).Log(co.logger).GetOne(ctx, db)

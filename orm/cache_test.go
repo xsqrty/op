@@ -26,9 +26,7 @@ func TestReturnableCache(t *testing.T) {
 		require.Equal(t, []string{"users", "companies"}, q.UsingTables())
 
 		q.LimitReturningOne()
-		q.SetReturning([]any{"id"})
-
-		q.SetReturningAliases([]op.Alias{
+		q.SetReturning([]op.Alias{
 			op.ColumnAlias("users.id"),
 			op.ColumnAlias("users.age"),
 			op.ColumnAlias("users.name"),

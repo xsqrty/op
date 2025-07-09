@@ -64,12 +64,12 @@ func (p *put[T]) getReturnable() (op.Returnable, error) {
 		return nil, fmt.Errorf("no such target for model %s", p.table)
 	}
 
-	setters, err := getSettersKeysByTags(md, p.table, fields)
+	setters, err := getSettersByTags(md, p.table, fields)
 	if err != nil {
 		return nil, err
 	}
 
-	pointers, err := getPointersByModelSetters(p.item, setters, fields)
+	pointers, err := getKeysPointers(p.item, setters, fields)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (p *put[T]) getCache(md *modelDetails, pointers []any, fields []string, use
 	}
 
 	insert := op.Insert(p.table, inserting).OnConflict(md.primaryAsTag, op.DoUpdate(updates))
-	insert.SetReturningAliases(aliases)
+	insert.SetReturning(aliases)
 
 	result := NewReturnableCache(insert)
 	inner, _ := putCache.LoadOrStore(cacheKey, &sync.Map{})

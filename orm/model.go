@@ -3,6 +3,7 @@ package orm
 import (
 	"errors"
 	"fmt"
+	"github.com/xsqrty/op"
 	"reflect"
 	"strings"
 	"sync"
@@ -51,7 +52,7 @@ func findAliasFullName[T any](g *query[T], data *modelDetails, shortValue string
 	return aliases
 }
 
-func getSettersKeysByTags(md *modelDetails, table string, tags []string) (map[string]modelSetters, error) {
+func getSettersByTags(md *modelDetails, table string, tags []string) (map[string]modelSetters, error) {
 	setters := make(map[string]modelSetters, len(md.tags))
 	for _, tag := range tags {
 		path := md.mapping[table][tag]
@@ -98,14 +99,14 @@ func getModelDetails(table string, target any) (*modelDetails, error) {
 		tagsDetails: make(map[string]map[string]*tagDetails),
 	}
 
-	forEachModel(table, val, nil, result)
+	collectModelDetails(table, val, nil, result)
 	inner, _ := modelsCache.LoadOrStore(table, &sync.Map{})
 	inner.(*sync.Map).Store(typ, result)
 
 	return result, nil
 }
 
-func forEachModel(table string, val reflect.Value, path []int, result *modelDetails) {
+func collectModelDetails(table string, val reflect.Value, path []int, result *modelDetails) {
 	typ := val.Type()
 	for i := 0; i < val.NumField(); i++ {
 		fieldVal := val.Field(i)
@@ -132,7 +133,7 @@ func forEachModel(table string, val reflect.Value, path []int, result *modelDeta
 
 		if isNested {
 			if fieldVal.Kind() == reflect.Struct {
-				forEachModel(tag, fieldVal, append(path, i), result)
+				collectModelDetails(tag, fieldVal, append(path, i), result)
 			}
 
 			continue
@@ -164,7 +165,7 @@ func forEachModel(table string, val reflect.Value, path []int, result *modelDeta
 	}
 }
 
-func getPointersByModelSetters(target any, setters map[string]modelSetters, keys []string) ([]any, error) {
+func getKeysPointers(target any, setters map[string]modelSetters, keys []string) ([]any, error) {
 	valueOf := reflect.ValueOf(target)
 	if valueOf.Kind() != reflect.Ptr {
 		return nil, ErrTargetNotStructPointer
@@ -199,7 +200,7 @@ func getPointersByModelSetters(target any, setters map[string]modelSetters, keys
 	return result, nil
 }
 
-func prepareModelQuery[T any](q *query[T], target *T) (*modelDetails, []string, error) {
+func setQueryReturning[T any](q *query[T], target *T) (*modelDetails, []string, error) {
 	data, err := getModelDetails(q.with, target)
 	if err != nil {
 		return nil, nil, err
@@ -208,17 +209,11 @@ func prepareModelQuery[T any](q *query[T], target *T) (*modelDetails, []string, 
 	var keys []string
 	retAliases := q.ret.GetReturning()
 	if len(retAliases) == 0 {
-		var fields []any
 		for _, table := range q.usingTables {
 			for _, v := range data.fields[table] {
-				fields = append(fields, v)
+				retAliases = append(retAliases, op.ColumnAlias(op.Column(v)))
 				keys = append(keys, v)
 			}
-		}
-
-		err := q.ret.SetReturning(fields)
-		if err != nil {
-			return nil, nil, err
 		}
 	} else {
 		for i := 0; i < len(retAliases); i++ {
@@ -240,9 +235,8 @@ func prepareModelQuery[T any](q *query[T], target *T) (*modelDetails, []string, 
 
 			keys = append(keys, aliasValue)
 		}
-
-		q.ret.SetReturningAliases(retAliases)
 	}
 
+	q.ret.SetReturning(retAliases)
 	return data, keys, nil
 }

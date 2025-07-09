@@ -129,7 +129,7 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 		return nil, err
 	}
 
-	pg.rowsSb.SetReturningAliases(pg.fields)
+	pg.rowsSb.SetReturning(pg.fields)
 
 	if len(where) > 0 {
 		pg.rowsSbWrap.Where(where)

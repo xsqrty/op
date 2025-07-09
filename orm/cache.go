@@ -12,15 +12,13 @@ type ReturnableContainer interface {
 }
 
 type retContainer struct {
-	res    cache.Result
-	ret    op.Returnable
-	retErr error
+	res cache.Result
+	ret op.Returnable
 
 	retM    sync.RWMutex
 	resOnce sync.Once
 	limOnce sync.Once
-	salOnce sync.Once
-	sreOnce sync.Once
+	retOnce sync.Once
 }
 
 type retCache struct {
@@ -63,23 +61,12 @@ func (rc *retCache) GetReturning() []op.Alias {
 	return result
 }
 
-func (rc *retCache) SetReturning(fields []any) error {
-	rc.container.sreOnce.Do(func() {
+func (rc *retCache) SetReturning(aliases []op.Alias) {
+	rc.container.retOnce.Do(func() {
 		rc.container.retM.Lock()
 		defer rc.container.retM.Unlock()
 
-		rc.container.retErr = rc.container.ret.SetReturning(fields)
-	})
-
-	return rc.container.retErr
-}
-
-func (rc *retCache) SetReturningAliases(aliases []op.Alias) {
-	rc.container.salOnce.Do(func() {
-		rc.container.retM.Lock()
-		defer rc.container.retM.Unlock()
-
-		rc.container.ret.SetReturningAliases(aliases)
+		rc.container.ret.SetReturning(aliases)
 	})
 }
 

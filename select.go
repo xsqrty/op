@@ -25,8 +25,7 @@ type SelectBuilder interface {
 	With() string
 	UsingTables() []string
 	GetReturning() []Alias
-	SetReturning(keys []any) error
-	SetReturningAliases(keys []Alias)
+	SetReturning(keys []Alias)
 	CounterType() CounterType
 	PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error)
 	Sql(options *driver.SqlOptions) (sql string, args []any, err error)
@@ -372,11 +371,7 @@ func (sb *selectBuilder) GetReturning() []Alias {
 	return sb.fields
 }
 
-func (sb *selectBuilder) SetReturning(keys []any) error {
-	return sb.setFields(keys)
-}
-
-func (sb *selectBuilder) SetReturningAliases(keys []Alias) {
+func (sb *selectBuilder) SetReturning(keys []Alias) {
 	sb.fields = keys
 }
 

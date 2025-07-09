@@ -44,12 +44,12 @@ func Query[T any](ret op.Returnable) QueryBuilder[T] {
 
 func (q *query[T]) GetOne(ctx context.Context, db Queryable) (*T, error) {
 	result := new(T)
-	md, keys, err := prepareModelQuery(q, result)
+	md, keys, err := setQueryReturning(q, result)
 	if err != nil {
 		return nil, err
 	}
 
-	pointers, err := getPointersByModelSetters(result, md.setters, keys)
+	pointers, err := getKeysPointers(result, md.setters, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (q *query[T]) GetOne(ctx context.Context, db Queryable) (*T, error) {
 func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 	result := make([]*T, 0)
 
-	md, keys, err := prepareModelQuery(q, new(T))
+	md, keys, err := setQueryReturning(q, new(T))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (q *query[T]) GetMany(ctx context.Context, db Queryable) ([]*T, error) {
 
 	for _, row := range rows.Rows() {
 		item := new(T)
-		pointers, err := getPointersByModelSetters(item, md.setters, keys)
+		pointers, err := getKeysPointers(item, md.setters, keys)
 		if err != nil {
 			return nil, err
 		}

@@ -237,12 +237,14 @@ func TestSelectReturning(t *testing.T) {
 
 	require.Equal(t, []Alias{ColumnAlias("id")}, item.GetReturning())
 
-	item.SetReturning([]any{"id", "age"})
-	require.Equal(t, []Alias{ColumnAlias("id"), ColumnAlias("age")}, item.GetReturning())
-
-	item.SetReturningAliases([]Alias{ColumnAlias("col2")})
+	item.SetReturning([]Alias{ColumnAlias("col2")})
 	require.Equal(t, []Alias{ColumnAlias("col2")}, item.GetReturning())
 	require.Equal(t, CounterQuery, item.CounterType())
+
+	sql, args, err := item.PreparedSql(testutil.NewDefaultOptions())
+	require.NoError(t, err)
+	require.Equal(t, `SELECT "col2" FROM "users" LIMIT ?`, sql)
+	require.Equal(t, []any{uint64(1)}, args)
 }
 
 func TestOrder(t *testing.T) {

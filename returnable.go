@@ -13,8 +13,7 @@ type Returnable interface {
 	UsingTables() []string
 	With() string
 	GetReturning() []Alias
-	SetReturning([]any) error
-	SetReturningAliases([]Alias)
+	SetReturning([]Alias)
 	Sql(options *driver.SqlOptions) (string, []any, error)
 	PreparedSql(options *driver.SqlOptions) (string, []any, error)
 	LimitReturningOne()

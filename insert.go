@@ -16,8 +16,7 @@ type InsertBuilder interface {
 	With() string
 	UsingTables() []string
 	GetReturning() []Alias
-	SetReturning(keys []any) error
-	SetReturningAliases(keys []Alias)
+	SetReturning(keys []Alias)
 	CounterType() CounterType
 	PreparedSql(options *driver.SqlOptions) (string, []any, error)
 	Sql(options *driver.SqlOptions) (string, []any, error)
@@ -210,11 +209,7 @@ func (ib *insertBuilder) GetReturning() []Alias {
 	return ib.returningKeys
 }
 
-func (ib *insertBuilder) SetReturning(keys []any) error {
-	return ib.setReturning(keys)
-}
-
-func (ib *insertBuilder) SetReturningAliases(keys []Alias) {
+func (ib *insertBuilder) SetReturning(keys []Alias) {
 	ib.returningKeys = keys
 }
 

@@ -124,7 +124,7 @@ func TestGetSettersKeysByTags(t *testing.T) {
 	t.Parallel()
 	table := "users"
 	details, _ := getModelDetails(table, &MockModel{})
-	setters, err := getSettersKeysByTags(details, table, []string{"id", "name"})
+	setters, err := getSettersByTags(details, table, []string{"id", "name"})
 
 	require.NoError(t, err)
 	require.Equal(t, map[string]modelSetters{
@@ -132,7 +132,7 @@ func TestGetSettersKeysByTags(t *testing.T) {
 		"name": {path: []int{1}},
 	}, setters)
 
-	setters, err = getSettersKeysByTags(details, table, []string{"undefined"})
+	setters, err = getSettersByTags(details, table, []string{"undefined"})
 	require.Nil(t, setters)
 	require.EqualError(t, err, `tag "undefined" does not exist in the setters list`)
 }
@@ -143,7 +143,7 @@ func TestGetSettersKeysByFields(t *testing.T) {
 	model := &MockModel{}
 
 	details, _ := getModelDetails(table, model)
-	pointers, err := getPointersByModelSetters(model, details.setters, []string{"users.id", "users.name", "users.date", "companies.id", "companies.name", "companies.date"})
+	pointers, err := getKeysPointers(model, details.setters, []string{"users.id", "users.name", "users.date", "companies.id", "companies.name", "companies.date"})
 
 	require.NoError(t, err)
 	require.Equal(t, []any{
@@ -165,17 +165,17 @@ func TestGetSettersKeysByFields(t *testing.T) {
 	require.Equal(t, name, model.Company.Name)
 
 	var mp *MockModel
-	pointers, err = getPointersByModelSetters(mp, details.setters, []string{"users.id", "users.name"})
+	pointers, err = getKeysPointers(mp, details.setters, []string{"users.id", "users.name"})
 	require.Nil(t, pointers)
 	require.EqualError(t, err, ErrTargetIsNil.Error())
 
 	var m MockModel
-	pointers, err = getPointersByModelSetters(m, details.setters, []string{"users.id", "users.name"})
+	pointers, err = getKeysPointers(m, details.setters, []string{"users.id", "users.name"})
 	require.Nil(t, pointers)
 	require.EqualError(t, err, ErrTargetNotStructPointer.Error())
 
 	details, _ = getModelDetails(table, model)
-	pointers, err = getPointersByModelSetters(model, details.setters, []string{"undefined"})
+	pointers, err = getKeysPointers(model, details.setters, []string{"undefined"})
 	require.Nil(t, pointers)
 	require.EqualError(t, err, `key "undefined" is not described in *orm.MockModel`)
 }
