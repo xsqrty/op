@@ -24,7 +24,7 @@ go get github.com/xsqrty/op
     - [Delete rows](#delete-rows)
   - [Put row](#put-row)
   - [Count rows](#count-rows)
-  - [Pagination](#pagination)Count rows
+  - [Pagination](#pagination)
 - [Build SQL](#build-sql)
   - [Select builder](#select-builder)
   - [Insert builder](#insert-builder)
@@ -453,7 +453,7 @@ if err != nil {
   panic(err)
 }
 
-res, err := Paginate[PaginateMockUser]("users", &paginateRequest).
+res, err := Paginate[User]("users", &paginateRequest).
   WhiteList("id", "age", "name").
   With(context.Background(), query)
 ```
