@@ -9,17 +9,6 @@ import (
 	"sync"
 )
 
-const opTag = "op"
-
-var (
-	ErrTargetNotStructPointer = errors.New("target must be a pointer to a struct")
-	ErrTargetIsNil            = errors.New("target must not be nil")
-	ErrAmbiguousField         = errors.New("target is ambiguous")
-	ErrFieldNotDescribe       = errors.New("target is not described in the struct")
-)
-
-var modelsCache sync.Map
-
 type modelSetters struct {
 	path []int
 }
@@ -37,6 +26,23 @@ type modelDetails struct {
 	tags         map[string][]string
 	tagsDetails  map[string]map[string]*tagDetails
 }
+
+type modelCacheKey struct {
+	typ   reflect.Type
+	table string
+}
+
+const opTag = "op"
+
+var (
+	ErrTargetNotStructPointer = errors.New("target must be a pointer to a struct")
+	ErrTargetIsNil            = errors.New("target must not be nil")
+	ErrAmbiguousField         = errors.New("target is ambiguous")
+	ErrFieldNotDescribe       = errors.New("target is not described in the struct")
+)
+
+var modelCache = make(map[modelCacheKey]*modelDetails)
+var modelCacheLock sync.RWMutex
 
 func findAliasFullName[T any](g *query[T], data *modelDetails, shortValue string) []string {
 	var aliases []string
@@ -85,10 +91,13 @@ func getModelDetails(table string, target any) (*modelDetails, error) {
 		return nil, ErrTargetNotStructPointer
 	}
 
-	if cachedMap, ok := modelsCache.Load(table); ok {
-		if cache, ok := cachedMap.(*sync.Map).Load(typ); ok {
-			return cache.(*modelDetails), nil
-		}
+	key := modelCacheKey{typ, table}
+	modelCacheLock.RLock()
+	cache, ok := modelCache[key]
+	modelCacheLock.RUnlock()
+
+	if ok {
+		return cache, nil
 	}
 
 	result := &modelDetails{
@@ -100,8 +109,9 @@ func getModelDetails(table string, target any) (*modelDetails, error) {
 	}
 
 	collectModelDetails(table, val, nil, result)
-	inner, _ := modelsCache.LoadOrStore(table, &sync.Map{})
-	inner.(*sync.Map).Store(typ, result)
+	modelCacheLock.Lock()
+	modelCache[key] = result
+	modelCacheLock.Unlock()
 
 	return result, nil
 }
