@@ -5,9 +5,24 @@ on:
   push:
     branches: [ 'main' ]
 jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: './go.mod'
+      - name: Run linters
+        uses: golangci/golangci-lint-action@v5
+        with:
+          args: --verbose
   test:
     name: Run tests
     runs-on: ubuntu-22.04
+    needs: lint
+    strategy:
+      matrix:
+        go: [ '1.23', 'latest' ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -15,7 +30,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v5
         with:
-          go-version: 'stable'
+          go-version: ${{ matrix.go }}
 
       - name: Install dependencies
         run: go mod download
@@ -29,7 +44,7 @@ jobs:
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: coverage
+          name: coverage-${{ matrix.go }}
           path: coverage.out
 
   coverage-upload:
@@ -40,7 +55,7 @@ jobs:
       - name: Download coverage artifact
         uses: actions/download-artifact@v4
         with:
-          name: coverage
+          name: coverage-latest
 
       - name: Upload coverage
         uses: coverallsapp/github-action@v2

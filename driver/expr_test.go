@@ -1,12 +1,13 @@
 package driver
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestPure(t *testing.T) {
-	sql, args, err := Pure("col > ? AND col < ?", 100, 200).Sql(NewPostgresSqlOptions())
+	sql, args, err := Pure("col > ? AND col < ?", 100, 200).Sql(NewSqlOptions())
 	require.NoError(t, err)
 
 	require.Equal(t, `col > ? AND col < ?`, sql)
@@ -14,7 +15,7 @@ func TestPure(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	sql, args, err := Value([]byte{'n', 'a', 'm', 'e'}).Sql(NewPostgresSqlOptions())
+	sql, args, err := Value([]byte{'n', 'a', 'm', 'e'}).Sql(NewSqlOptions())
 	require.NoError(t, err)
 
 	require.Equal(t, "?", sql)

@@ -2,8 +2,9 @@ package db
 
 import (
 	"context"
-	"github.com/xsqrty/op/driver"
 	"iter"
+
+	"github.com/xsqrty/op/driver"
 )
 
 type QueryExec interface {

@@ -1,8 +1,9 @@
 package op
 
 import (
-	"github.com/xsqrty/op/driver"
 	"strings"
+
+	"github.com/xsqrty/op/driver"
 )
 
 type list []any
@@ -11,7 +12,12 @@ func (l list) Sql(options *driver.SqlOptions) (string, []any, error) {
 	return joinList(options.FieldsDelim, l, false, options)
 }
 
-func joinList(joiner byte, list []any, strAsCol bool, options *driver.SqlOptions) (string, []any, error) {
+func joinList(
+	joiner byte,
+	list []any,
+	strAsCol bool,
+	options *driver.SqlOptions,
+) (string, []any, error) {
 	var args []any
 	var buf strings.Builder
 

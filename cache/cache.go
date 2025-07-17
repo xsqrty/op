@@ -2,8 +2,9 @@ package cache
 
 import (
 	"fmt"
-	"github.com/xsqrty/op/driver"
 	"sync"
+
+	"github.com/xsqrty/op/driver"
 )
 
 type Container interface {
@@ -54,7 +55,6 @@ func (c *container) Use(args Args) driver.Sqler {
 func (c *cache) Sql(options *driver.SqlOptions) (string, []any, error) {
 	c.container.resOnce.Do(func() {
 		sql, args, err := c.container.input.Sql(options)
-
 		if err != nil {
 			c.container.res.Err = err
 			return

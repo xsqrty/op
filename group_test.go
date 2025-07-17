@@ -1,8 +1,9 @@
 package op
 
 import (
-	"github.com/xsqrty/op/internal/testutil"
 	"testing"
+
+	"github.com/xsqrty/op/internal/testutil"
 )
 
 func TestGroup(t *testing.T) {

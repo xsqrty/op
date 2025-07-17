@@ -2,6 +2,7 @@ package orm
 
 import (
 	"context"
+
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/driver"
@@ -11,11 +12,11 @@ type CountBuilder interface {
 	By(key string) CountBuilder
 	ByDistinct(key string) CountBuilder
 	Log(handler LoggerHandler) CountBuilder
-	With(ctx context.Context, db db.QueryExec) (uint64, error)
+	With(ctx context.Context, db db.QueryExec) (int64, error)
 }
 
 type countResultModel struct {
-	Count uint64 `op:"total_count,aggregated"`
+	Count int64 `op:"total_count,aggregated"`
 }
 
 type count struct {
@@ -33,7 +34,7 @@ func Count(ret op.Returnable) CountBuilder {
 	}
 }
 
-func (co *count) With(ctx context.Context, db db.QueryExec) (uint64, error) {
+func (co *count) With(ctx context.Context, db db.QueryExec) (int64, error) {
 	if co.ret.CounterType() == op.CounterQuery {
 		return co.getQueryResult(ctx, db)
 	}
@@ -60,7 +61,7 @@ func (co *count) Log(lh LoggerHandler) CountBuilder {
 	return co
 }
 
-func (co *count) getExecResult(ctx context.Context, db Executable) (uint64, error) {
+func (co *count) getExecResult(ctx context.Context, db Executable) (int64, error) {
 	result, err := Exec(co.ret).Log(co.logger).With(ctx, db)
 	if err != nil {
 		return 0, err
@@ -71,15 +72,16 @@ func (co *count) getExecResult(ctx context.Context, db Executable) (uint64, erro
 		return 0, err
 	}
 
-	return uint64(count), nil
+	return count, nil
 }
 
-func (co *count) getQueryResult(ctx context.Context, db Queryable) (uint64, error) {
-	if !co.byColumn.IsZero() && co.byDistinct {
+func (co *count) getQueryResult(ctx context.Context, db Queryable) (int64, error) {
+	switch {
+	case !co.byColumn.IsZero() && co.byDistinct:
 		co.ret.SetReturning([]op.Alias{op.As(totalCountColumn, op.CountDistinct(co.byColumn))})
-	} else if !co.byColumn.IsZero() {
+	case !co.byColumn.IsZero():
 		co.ret.SetReturning([]op.Alias{op.As(totalCountColumn, op.Count(co.byColumn))})
-	} else {
+	default:
 		co.ret.SetReturning([]op.Alias{op.As(totalCountColumn, op.Count(driver.Pure("*")))})
 	}
 

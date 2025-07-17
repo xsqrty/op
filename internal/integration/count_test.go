@@ -2,11 +2,12 @@ package integration
 
 import (
 	"context"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/orm"
-	"testing"
 )
 
 func TestCount(t *testing.T) {
@@ -33,11 +34,13 @@ func TestCount(t *testing.T) {
 				}
 			}
 
-			count, err = orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, conn)
+			count, err = orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).
+				With(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, deletedCount, int(count))
 
-			count, err = orm.Count(op.Select().From(usersTable).LeftJoin(companiesTable, op.Eq("companies.id", op.Column("users.company_id"))).Where(op.Eq("companies.id", company.ID))).With(ctx, conn)
+			count, err = orm.Count(op.Select().From(usersTable).LeftJoin(companiesTable, op.Eq("companies.id", op.Column("users.company_id"))).Where(op.Eq("companies.id", company.ID))).
+				With(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, companyCount, int(count))
 

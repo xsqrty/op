@@ -3,12 +3,13 @@ package orm
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 type PaginateMockUser struct {
@@ -34,7 +35,12 @@ func TestPaginateApi(t *testing.T) {
 			expectedSqlCount:  `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."name") AS "user_name" FROM "users" JOIN "companies" ON "users"."company_id" = "companies"."id") AS "result"`,
 			expectedArgs:      []any{uint64(1)},
 			expectedArgsCount: []any(nil),
-			builder:           Paginate[PaginateMockUser]("users", &PaginateRequest{}).Fields(op.As("user_name", op.Column("users.name"))).WhiteList("id", "age", "name").Join("companies", op.Eq("users.company_id", op.Column("companies.id"))),
+			builder: Paginate[PaginateMockUser](
+				"users",
+				&PaginateRequest{},
+			).Fields(op.As("user_name", op.Column("users.name"))).
+				WhiteList("id", "age", "name").
+				Join("companies", op.Eq("users.company_id", op.Column("companies.id"))),
 		},
 		{
 			name:              "inner_join",
@@ -42,7 +48,12 @@ func TestPaginateApi(t *testing.T) {
 			expectedSqlCount:  `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."name") AS "user_name" FROM "users" INNER JOIN "companies" ON "users"."company_id" = "companies"."id") AS "result"`,
 			expectedArgs:      []any{uint64(1)},
 			expectedArgsCount: []any(nil),
-			builder:           Paginate[PaginateMockUser]("users", &PaginateRequest{}).Fields(op.As("user_name", op.Column("users.name"))).WhiteList("id", "age", "name").InnerJoin("companies", op.Eq("users.company_id", op.Column("companies.id"))),
+			builder: Paginate[PaginateMockUser](
+				"users",
+				&PaginateRequest{},
+			).Fields(op.As("user_name", op.Column("users.name"))).
+				WhiteList("id", "age", "name").
+				InnerJoin("companies", op.Eq("users.company_id", op.Column("companies.id"))),
 		},
 		{
 			name:              "left_join",
@@ -50,7 +61,12 @@ func TestPaginateApi(t *testing.T) {
 			expectedSqlCount:  `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."name") AS "user_name" FROM "users" LEFT JOIN "companies" ON "users"."company_id" = "companies"."id") AS "result"`,
 			expectedArgs:      []any{uint64(1)},
 			expectedArgsCount: []any(nil),
-			builder:           Paginate[PaginateMockUser]("users", &PaginateRequest{}).Fields(op.As("user_name", op.Column("users.name"))).WhiteList("id", "age", "name").LeftJoin("companies", op.Eq("users.company_id", op.Column("companies.id"))),
+			builder: Paginate[PaginateMockUser](
+				"users",
+				&PaginateRequest{},
+			).Fields(op.As("user_name", op.Column("users.name"))).
+				WhiteList("id", "age", "name").
+				LeftJoin("companies", op.Eq("users.company_id", op.Column("companies.id"))),
 		},
 		{
 			name:              "right_join",
@@ -58,7 +74,12 @@ func TestPaginateApi(t *testing.T) {
 			expectedSqlCount:  `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."name") AS "user_name" FROM "users" RIGHT JOIN "companies" ON "users"."company_id" = "companies"."id") AS "result"`,
 			expectedArgs:      []any{uint64(1)},
 			expectedArgsCount: []any(nil),
-			builder:           Paginate[PaginateMockUser]("users", &PaginateRequest{}).Fields(op.As("user_name", op.Column("users.name"))).WhiteList("id", "age", "name").RightJoin("companies", op.Eq("users.company_id", op.Column("companies.id"))),
+			builder: Paginate[PaginateMockUser](
+				"users",
+				&PaginateRequest{},
+			).Fields(op.As("user_name", op.Column("users.name"))).
+				WhiteList("id", "age", "name").
+				RightJoin("companies", op.Eq("users.company_id", op.Column("companies.id"))),
 		},
 		{
 			name:              "cross_join",
@@ -66,7 +87,12 @@ func TestPaginateApi(t *testing.T) {
 			expectedSqlCount:  `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."name") AS "user_name" FROM "users" CROSS JOIN "companies" ON "users"."company_id" = "companies"."id") AS "result"`,
 			expectedArgs:      []any{uint64(1)},
 			expectedArgsCount: []any(nil),
-			builder:           Paginate[PaginateMockUser]("users", &PaginateRequest{}).Fields(op.As("user_name", op.Column("users.name"))).WhiteList("id", "age", "name").CrossJoin("companies", op.Eq("users.company_id", op.Column("companies.id"))),
+			builder: Paginate[PaginateMockUser](
+				"users",
+				&PaginateRequest{},
+			).Fields(op.As("user_name", op.Column("users.name"))).
+				WhiteList("id", "age", "name").
+				CrossJoin("companies", op.Eq("users.company_id", op.Column("companies.id"))),
 		},
 	}
 
@@ -81,7 +107,8 @@ func TestPaginateApi(t *testing.T) {
 					testutil.NewMockRow(nil, []any{"John"}),
 				}), nil)
 
-			query.On("QueryRow", mock.Anything, tc.expectedSqlCount, tc.expectedArgsCount).Return(testutil.NewMockRow(nil, []any{uint64(2)}))
+			query.On("QueryRow", mock.Anything, tc.expectedSqlCount, tc.expectedArgsCount).
+				Return(testutil.NewMockRow(nil, []any{uint64(2)}))
 
 			res, err := tc.builder.With(context.Background(), query)
 
@@ -96,7 +123,15 @@ func TestPaginateApi(t *testing.T) {
 func TestPaginate(t *testing.T) {
 	t.Parallel()
 	expectedSql := `SELECT * FROM (SELECT ("users"."id") AS "user_id",("users"."age") AS "user_age",("users"."name") AS "user_name",("companies"."name") AS "company_name" FROM "users" LEFT JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "companies"."id" = ? GROUP BY "users"."id","companies"."name") AS "result" WHERE ("age" = ? OR "age" = ? OR "id" IN (?,?,?)) ORDER BY "id" DESC LIMIT ?`
-	expectedArgs := []any{111, float64(25), float64(26), float64(1), float64(2), float64(3), uint64(5)}
+	expectedArgs := []any{
+		111,
+		float64(25),
+		float64(26),
+		float64(1),
+		float64(2),
+		float64(3),
+		uint64(5),
+	}
 
 	expectedCounterSql := `SELECT (COUNT(*)) AS "total_count" FROM (SELECT ("users"."id") AS "user_id",("users"."age") AS "user_age",("users"."name") AS "user_name",("companies"."name") AS "company_name" FROM "users" LEFT JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "companies"."id" = ? GROUP BY "users"."id","companies"."name") AS "result" WHERE ("age" = ? OR "age" = ? OR "id" IN (?,?,?))`
 	expectedCounterArgs := []any{111, float64(25), float64(26), float64(1), float64(2), float64(3)}
@@ -109,7 +144,8 @@ func TestPaginate(t *testing.T) {
 			testutil.NewMockRow(nil, []any{2, 26, "John", "Company 2"}),
 		}), nil)
 
-	query.On("QueryRow", mock.Anything, expectedCounterSql, expectedCounterArgs).Return(testutil.NewMockRow(nil, []any{uint64(2)}))
+	query.On("QueryRow", mock.Anything, expectedCounterSql, expectedCounterArgs).
+		Return(testutil.NewMockRow(nil, []any{uint64(2)}))
 
 	reqString := `{
 			"limit": 10,

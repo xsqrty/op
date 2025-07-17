@@ -2,13 +2,14 @@ package integration
 
 import (
 	"context"
+	"testing"
+
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/orm"
-	"testing"
 )
 
 func TestUUID(t *testing.T) {
@@ -24,7 +25,9 @@ func TestUUID(t *testing.T) {
 			}).With(ctx, conn)
 
 			require.NoError(t, err)
-			l, err := orm.Query[MockLabel](op.Select().From(labelsTable).Where(op.Eq("ID", id))).GetOne(ctx, conn)
+			l, err := orm.Query[MockLabel](
+				op.Select().From(labelsTable).Where(op.Eq("ID", id)),
+			).GetOne(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, id, l.ID)
 			require.Equal(t, label, l.Label)

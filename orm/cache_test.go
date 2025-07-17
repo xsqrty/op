@@ -1,18 +1,22 @@
 package orm
 
 import (
+	"testing"
+
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/cache"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 func TestReturnableCache(t *testing.T) {
 	t.Parallel()
 
-	q := op.Select("id", "age").From("users").Join("companies", op.Eq("users.company_id", op.Column("companies.id"))).Where(op.Eq("id", cache.Arg("id")))
+	q := op.Select("id", "age").
+		From("users").
+		Join("companies", op.Eq("users.company_id", op.Column("companies.id"))).
+		Where(op.Eq("id", cache.Arg("id")))
 	c := NewReturnableCache(q)
 
 	for i := 0; i < 2; i++ {
@@ -37,13 +41,22 @@ func TestReturnableCache(t *testing.T) {
 
 		sql, args, err := q.Sql(testutil.NewDefaultOptions())
 		require.NoError(t, err)
-		require.Equal(t, `SELECT "users"."id","users"."age","users"."name","companies"."name" FROM "users" JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "id" = ? LIMIT ?`, sql)
+		require.Equal(
+			t,
+			`SELECT "users"."id","users"."age","users"."name","companies"."name" FROM "users" JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "id" = ? LIMIT ?`,
+			sql,
+		)
 		require.Len(t, args, 2)
 		require.IsType(t, &cache.ArgData{}, args[0])
 		require.Equal(t, uint64(1), args[1])
 
 		sql, args, err = q.PreparedSql(testutil.NewDefaultOptions())
-		require.Equal(t, `SELECT "users"."id","users"."age","users"."name","companies"."name" FROM "users" JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "id" = ? LIMIT ?`, sql)
+		require.NoError(t, err)
+		require.Equal(
+			t,
+			`SELECT "users"."id","users"."age","users"."name","companies"."name" FROM "users" JOIN "companies" ON "users"."company_id" = "companies"."id" WHERE "id" = ? LIMIT ?`,
+			sql,
+		)
 		require.Equal(t, []any{id, uint64(1)}, args)
 	}
 }

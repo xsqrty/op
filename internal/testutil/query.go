@@ -2,11 +2,12 @@ package testutil
 
 import (
 	"context"
+	"iter"
+	"reflect"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/driver"
-	"iter"
-	"reflect"
 )
 
 type mockQueryable struct {
@@ -58,7 +59,7 @@ func (m *mockQueryable) SqlOptions() *driver.SqlOptions {
 
 func (mr *mockRows) Rows() iter.Seq2[int, db.Scanner] {
 	return func(yield func(int, db.Scanner) bool) {
-		for i, _ := range mr.rows {
+		for i := range mr.rows {
 			if !yield(i, mr.rows[i]) {
 				break
 			}

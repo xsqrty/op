@@ -3,8 +3,9 @@ package op
 import (
 	"errors"
 	"fmt"
-	"github.com/xsqrty/op/driver"
 	"strings"
+
+	"github.com/xsqrty/op/driver"
 )
 
 var (
@@ -34,7 +35,11 @@ func exprOrVal(v any, options *driver.SqlOptions) (sql string, args []any, err e
 	return string(driver.Placeholder), []any{v}, nil
 }
 
-func concatUpdates(keys []Column, values []driver.Sqler, options *driver.SqlOptions) (sql string, args []any, err error) {
+func concatUpdates(
+	keys []Column,
+	values []driver.Sqler,
+	options *driver.SqlOptions,
+) (sql string, args []any, err error) {
 	var buf strings.Builder
 	for i, key := range keys {
 		sqlKey, keyArgs, err := key.Sql(options)
@@ -62,7 +67,10 @@ func concatUpdates(keys []Column, values []driver.Sqler, options *driver.SqlOpti
 	return buf.String(), args, nil
 }
 
-func concatFields[T driver.Sqler](fields []T, options *driver.SqlOptions) (sql string, args []any, err error) {
+func concatFields[T driver.Sqler](
+	fields []T,
+	options *driver.SqlOptions,
+) (sql string, args []any, err error) {
 	var buf strings.Builder
 	for i := range fields {
 		sql, fieldArgs, err := fields[i].Sql(options)

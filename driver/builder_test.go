@@ -3,19 +3,25 @@ package driver
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/require"
+	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-type errorSqler struct {
-}
+type errorSqler struct{}
 
 func (e errorSqler) Sql(_ *SqlOptions) (string, []any, error) {
 	return "", nil, errors.New("error")
 }
 
 func TestSql(t *testing.T) {
-	options := NewPostgresSqlOptions()
+	options := NewSqlOptions(
+		WithPlaceholderFormat(func(n int) string {
+			return "$" + strconv.Itoa(n)
+		}),
+	)
+
 	sql, args, err := Sql(Pure("?? ?,?,?", 1, "2", 3.01), options)
 	require.NoError(t, err)
 	require.Equal(t, "?? $1,$2,$3", sql)
@@ -33,9 +39,12 @@ func TestSql(t *testing.T) {
 }
 
 func TestSqlWithPlaceholders(t *testing.T) {
-	sql, args, err := Sql(Pure("?? ?,?,?", 1, "2", 3.01), NewSqlOptions(WithPlaceholderFormat(func(i int) string {
-		return fmt.Sprintf("@%d", i)
-	})))
+	sql, args, err := Sql(
+		Pure("?? ?,?,?", 1, "2", 3.01),
+		NewSqlOptions(WithPlaceholderFormat(func(i int) string {
+			return fmt.Sprintf("@%d", i)
+		})),
+	)
 	require.NoError(t, err)
 	require.Equal(t, "?? @1,@2,@3", sql)
 	require.Equal(t, []any{1, "2", 3.01}, args)

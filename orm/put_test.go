@@ -2,10 +2,11 @@ package orm
 
 import (
 	"context"
+	"testing"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 type PutMockUser struct {

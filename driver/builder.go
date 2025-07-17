@@ -9,6 +9,7 @@ const (
 )
 
 type sqlOption func(options *SqlOptions)
+
 type SqlOptions struct {
 	WrapAliasBegin    byte
 	WrapAliasEnd      byte

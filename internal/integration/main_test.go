@@ -5,19 +5,22 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
+	"math/rand/v2"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/xsqrty/op/db"
+	"github.com/xsqrty/op/db/postgres"
+	"github.com/xsqrty/op/db/sqlite"
 	"github.com/xsqrty/op/driver"
 	"github.com/xsqrty/op/orm"
-	"log"
-	"math/rand/v2"
-	"os"
-	"testing"
-	"time"
 )
 
 const (
@@ -75,42 +78,46 @@ type MockSeeding struct {
 	Companies []*MockCompany
 }
 
-var pgConn db.ConnPool
-var sqliteConn db.ConnPool
+var (
+	pgConn     db.ConnPool
+	sqliteConn db.ConnPool
+)
 
-var ctx = context.Background()
-var errRollback = errors.New("rollback")
+var (
+	ctx         = context.Background()
+	errRollback = errors.New("rollback")
+)
 
 func TestMain(m *testing.M) {
 	dsn, cleanup, err := startPostgresContainer(ctx)
-	defer cleanup()
 	if err != nil {
-		log.Fatalf("failed to start container: %v", err)
+		log.Panicf("failed to start container: %v", err)
 	}
+	defer cleanup()
 
 	pgConn, err = connectPostgres(ctx, dsn)
 	if err != nil {
-		log.Fatalf("failed to connect to postgres: %v", err)
+		log.Panicf("failed to connect to postgres: %v", err)
 	}
-	defer pgConn.Close()
+	defer pgConn.Close() // nolint: errcheck
 
 	err = createPostgresTables(ctx, pgConn)
 	if err != nil {
-		log.Fatalf("failed to create postgres tables: %v", err)
+		log.Panicf("failed to create postgres tables: %v", err)
 	}
 
-	sqliteConn, err = connectSqlite(ctx, sqliteDSN)
+	sqliteConn, err = connectSqlite(sqliteDSN)
 	if err != nil {
-		log.Fatalf("failed to connect to sqlite: %v", err)
+		log.Panicf("failed to connect to sqlite: %v", err)
 	}
 	defer func() {
-		os.Remove(sqliteDSN)
+		os.Remove(sqliteDSN) // nolint: errcheck, gosec
 	}()
-	defer sqliteConn.Close()
+	defer sqliteConn.Close() // nolint: errcheck, gosec
 
 	err = createSqliteTables(ctx, sqliteConn)
 	if err != nil {
-		log.Fatalf("failed to create sqlite tables: %v", err)
+		log.Panicf("failed to create sqlite tables: %v", err)
 	}
 
 	m.Run()
@@ -136,7 +143,7 @@ func DataSeed(ctx context.Context, qe db.QueryExec) (*MockSeeding, error) {
 	}
 
 	for i := 0; i < 100; i++ {
-		comp := mockCompanies[rand.IntN(len(mockCompanies))]
+		comp := mockCompanies[rand.IntN(len(mockCompanies))] // nolint: gosec
 		user := &MockUser{
 			ID:        i + 1,
 			Name:      gofakeit.Name(),
@@ -162,7 +169,12 @@ func DataSeed(ctx context.Context, qe db.QueryExec) (*MockSeeding, error) {
 	}, nil
 }
 
-func Transact(t *testing.T, ctx context.Context, conn db.ConnPool, handler func(ctx context.Context) error) error {
+func Transact(
+	t *testing.T,
+	ctx context.Context,
+	conn db.ConnPool,
+	handler func(ctx context.Context) error,
+) error {
 	t.Helper()
 	return conn.Transact(ctx, handler)
 }
@@ -287,30 +299,30 @@ func createSqliteTables(ctx context.Context, pool db.ConnPool) error {
 }
 
 func connectPostgres(ctx context.Context, dsn string) (db.ConnPool, error) {
-	options := []db.OpenPgxOption{
-		db.WithPgxHealthCheckPeriod(time.Minute),
-		db.WithPgxMinIdleConns(0),
-		db.WithPgxMinConns(0),
-		db.WithPgxMaxConns(4),
-		db.WithPgxMaxConnIdleTime(time.Minute * 30),
-		db.WithPgxMaxConnLifetimeJitter(0),
-		db.WithPgxMaxConnLifetime(time.Hour),
-		db.WithPgxBeforeClose(func(conn *pgx.Conn) {}),
-		db.WithPgxAfterRelease(func(conn *pgx.Conn) bool {
+	options := []postgres.OpenOption{
+		postgres.WithHealthCheckPeriod(time.Minute),
+		postgres.WithMinIdleConns(0),
+		postgres.WithMinConns(0),
+		postgres.WithMaxConns(4),
+		postgres.WithMaxConnIdleTime(time.Minute * 30),
+		postgres.WithMaxConnLifetimeJitter(0),
+		postgres.WithMaxConnLifetime(time.Hour),
+		postgres.WithBeforeClose(func(conn *pgx.Conn) {}),
+		postgres.WithAfterRelease(func(conn *pgx.Conn) bool {
 			return true
 		}),
-		db.WithPgxBeforeAcquire(func(context.Context, *pgx.Conn) bool {
+		postgres.WithBeforeAcquire(func(context.Context, *pgx.Conn) bool {
 			return true
 		}),
-		db.WithPgxAfterConnect(func(context.Context, *pgx.Conn) error {
+		postgres.WithAfterConnect(func(context.Context, *pgx.Conn) error {
 			return nil
 		}),
-		db.WithPgxBeforeConnect(func(context.Context, *pgx.ConnConfig) error {
+		postgres.WithBeforeConnect(func(context.Context, *pgx.ConnConfig) error {
 			return nil
 		}),
 	}
 
-	pool, err := db.OpenPostgres(ctx, dsn, options...)
+	pool, err := postgres.Open(ctx, dsn, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -318,15 +330,14 @@ func connectPostgres(ctx context.Context, dsn string) (db.ConnPool, error) {
 	return pool, nil
 }
 
-func connectSqlite(ctx context.Context, dsn string) (db.ConnPool, error) {
-	os.Remove(dsn)
-	pool, err := db.OpenSqlite(
-		ctx,
+func connectSqlite(dsn string) (db.ConnPool, error) {
+	os.Remove(dsn) // nolint: errcheck, gosec
+	pool, err := sqlite.Open(
 		dsn,
-		db.WithConnMaxIdleTime(5*time.Minute),
-		db.WithConnMaxLifetime(5*time.Minute),
-		db.WithMaxIdleConns(2),
-		db.WithMaxOpenConns(10),
+		sqlite.WithConnMaxIdleTime(5*time.Minute),
+		sqlite.WithConnMaxLifetime(5*time.Minute),
+		sqlite.WithMaxIdleConns(2),
+		sqlite.WithMaxOpenConns(10),
 	)
 	if err != nil {
 		return nil, err
@@ -351,7 +362,6 @@ func startPostgresContainer(ctx context.Context) (string, func(), error) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		return "", nil, err
 	}
@@ -366,8 +376,15 @@ func startPostgresContainer(ctx context.Context) (string, func(), error) {
 		return "", nil, err
 	}
 
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", postgresUser, postgresPass, host, port.Port(), postgresDB)
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s",
+		postgresUser,
+		postgresPass,
+		host,
+		port.Port(),
+		postgresDB,
+	)
 	return dsn, func() {
-		container.Terminate(ctx)
+		container.Terminate(ctx) // nolint: errcheck, gosec
 	}, nil
 }

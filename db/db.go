@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/xsqrty/op/driver"
 	"io"
 	"iter"
+
+	"github.com/xsqrty/op/driver"
 )
 
 type ConnPool interface {
@@ -41,6 +42,10 @@ var txKey = txProp("tx")
 
 var txOptions = &sql.TxOptions{Isolation: sql.LevelReadCommitted}
 
+func NewConnPool(db *sql.DB, options *driver.SqlOptions) ConnPool {
+	return &connPool{stdDb: db, options: options}
+}
+
 func (cp *connPool) Exec(ctx context.Context, sql string, args ...any) (ExecResult, error) {
 	return cp.get(ctx).ExecContext(ctx, sql, args...)
 }
@@ -60,7 +65,10 @@ func (cp *connPool) QueryRow(ctx context.Context, sql string, args ...any) Row {
 	return cp.get(ctx).QueryRowContext(ctx, sql, args...)
 }
 
-func (cp *connPool) Transact(ctx context.Context, handler func(ctx context.Context) error) (err error) {
+func (cp *connPool) Transact(
+	ctx context.Context,
+	handler func(ctx context.Context) error,
+) (err error) {
 	tx, err := cp.stdDb.BeginTx(ctx, txOptions)
 	if err != nil {
 		return err
@@ -125,7 +133,7 @@ func (rr *rowsResult) Columns() ([]string, error) {
 }
 
 func (rr *rowsResult) Close() {
-	rr.rows.Close()
+	rr.rows.Close() // nolint: errcheck,gosec
 }
 
 func (rr *rowsResult) Err() error {

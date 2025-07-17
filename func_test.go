@@ -1,9 +1,10 @@
 package op
 
 import (
+	"testing"
+
 	"github.com/xsqrty/op/driver"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 func TestFunctions(t *testing.T) {

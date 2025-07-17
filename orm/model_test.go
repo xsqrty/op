@@ -2,10 +2,11 @@ package orm
 
 import (
 	"fmt"
-	"github.com/brianvoe/gofakeit/v7"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/brianvoe/gofakeit/v7"
+	"github.com/stretchr/testify/require"
 )
 
 type MockCompany struct {
@@ -143,7 +144,18 @@ func TestGetSettersKeysByFields(t *testing.T) {
 	model := &MockModel{}
 
 	details, _ := getModelDetails(table, model)
-	pointers, err := getKeysPointers(model, details.setters, []string{"users.id", "users.name", "users.date", "companies.id", "companies.name", "companies.date"})
+	pointers, err := getKeysPointers(
+		model,
+		details.setters,
+		[]string{
+			"users.id",
+			"users.name",
+			"users.date",
+			"companies.id",
+			"companies.name",
+			"companies.date",
+		},
+	)
 
 	require.NoError(t, err)
 	require.Equal(t, []any{

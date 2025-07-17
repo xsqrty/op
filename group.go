@@ -1,8 +1,9 @@
 package op
 
 import (
-	"github.com/xsqrty/op/driver"
 	"strings"
+
+	"github.com/xsqrty/op/driver"
 )
 
 const (
@@ -10,9 +11,11 @@ const (
 	concatOr  = " OR "
 )
 
-type Group []driver.Sqler
-type And []driver.Sqler
-type Or []driver.Sqler
+type (
+	Group []driver.Sqler
+	And   []driver.Sqler
+	Or    []driver.Sqler
+)
 
 func (l And) Sql(options *driver.SqlOptions) (string, []any, error) {
 	return buildConcat(concatAnd, l, options)
@@ -22,7 +25,11 @@ func (l Or) Sql(options *driver.SqlOptions) (string, []any, error) {
 	return buildConcat(concatOr, l, options)
 }
 
-func buildConcat(joiner string, l []driver.Sqler, options *driver.SqlOptions) (string, []any, error) {
+func buildConcat(
+	joiner string,
+	l []driver.Sqler,
+	options *driver.SqlOptions,
+) (string, []any, error) {
 	var buf strings.Builder
 	var resultArgs []any
 	wrap := len(l) > 1

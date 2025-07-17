@@ -1,9 +1,10 @@
 package op
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 func TestInsert(t *testing.T) {
@@ -18,32 +19,54 @@ func TestInsert(t *testing.T) {
 			ExpectedArgs: []any{100},
 		},
 		{
-			Name:         "insert_many",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").Values(20, "John"),
+			Name: "insert_many",
+			Builder: InsertMany(
+				"users",
+			).Columns("age", "name").
+				Values(10, "Alex").
+				Values(20, "John"),
 			ExpectedSql:  `INSERT INTO "users" ("age","name") VALUES (?,?),(?,?)`,
 			ExpectedArgs: []any{10, "Alex", 20, "John"},
 		},
 		{
-			Name:         "insert_returning",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").Returning("id"),
+			Name: "insert_returning",
+			Builder: InsertMany(
+				"users",
+			).Columns("age", "name").
+				Values(10, "Alex").
+				Returning("id"),
 			ExpectedSql:  `INSERT INTO "users" ("age","name") VALUES (?,?) RETURNING "id"`,
 			ExpectedArgs: []any{10, "Alex"},
 		},
 		{
-			Name:         "insert_returning_alias",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").Returning(ColumnAlias("id")),
+			Name: "insert_returning_alias",
+			Builder: InsertMany(
+				"users",
+			).Columns("age", "name").
+				Values(10, "Alex").
+				Returning(ColumnAlias("id")),
 			ExpectedSql:  `INSERT INTO "users" ("age","name") VALUES (?,?) RETURNING "id"`,
 			ExpectedArgs: []any{10, "Alex"},
 		},
 		{
-			Name:         "insert_conflict_do_nothing",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").Returning("id").OnConflict("id", DoNothing()),
+			Name: "insert_conflict_do_nothing",
+			Builder: InsertMany(
+				"users",
+			).Columns("age", "name").
+				Values(10, "Alex").
+				Returning("id").
+				OnConflict("id", DoNothing()),
 			ExpectedSql:  `INSERT INTO "users" ("age","name") VALUES (?,?) ON CONFLICT ("id") DO NOTHING RETURNING "id"`,
 			ExpectedArgs: []any{10, "Alex"},
 		},
 		{
-			Name:         "insert_conflict_alias",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").Returning("id").OnConflict(ColumnAlias("id"), DoNothing()),
+			Name: "insert_conflict_alias",
+			Builder: InsertMany(
+				"users",
+			).Columns("age", "name").
+				Values(10, "Alex").
+				Returning("id").
+				OnConflict(ColumnAlias("id"), DoNothing()),
 			ExpectedSql:  `INSERT INTO "users" ("age","name") VALUES (?,?) ON CONFLICT ("id") DO NOTHING RETURNING "id"`,
 			ExpectedArgs: []any{10, "Alex"},
 		},
@@ -62,15 +85,23 @@ func TestInsert(t *testing.T) {
 			ExpectedErr:  "insert: no insert values",
 		},
 		{
-			Name:         "insert_error_3",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, 20).OnConflict("age+age", DoNothing()),
+			Name: "insert_error_3",
+			Builder: InsertMany(
+				"users",
+			).Columns("age", "name").
+				Values(10, 20).
+				OnConflict("age+age", DoNothing()),
 			ExpectedSql:  "",
 			ExpectedArgs: []any(nil),
 			ExpectedErr:  `target "age+age" contains illegal character '+'`,
 		},
 		{
-			Name:         "insert_error_4",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, 20).Returning("age+age"),
+			Name: "insert_error_4",
+			Builder: InsertMany(
+				"users",
+			).Columns("age", "name").
+				Values(10, 20).
+				Returning("age+age"),
 			ExpectedSql:  "",
 			ExpectedArgs: []any(nil),
 			ExpectedErr:  `target "age+age" contains illegal character '+'`,
@@ -104,8 +135,12 @@ func TestInsert(t *testing.T) {
 			ExpectedErr:  "unknown type: int must be a string or Alias",
 		},
 		{
-			Name:         "insert_error_9",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, "Alex").OnConflict("age", DoUpdate(Updates{})),
+			Name: "insert_error_9",
+			Builder: InsertMany(
+				"users",
+			).Columns("age", "name").
+				Values(10, "Alex").
+				OnConflict("age", DoUpdate(Updates{})),
 			ExpectedSql:  "",
 			ExpectedArgs: []any(nil),
 			ExpectedErr:  "update: fields is empty",
@@ -118,8 +153,12 @@ func TestInsert(t *testing.T) {
 			ExpectedErr:  "unknown type: int must be a string or Alias",
 		},
 		{
-			Name:         "insert_error_11",
-			Builder:      InsertMany("users").Columns("age", "name").Values(10, 20).OnConflict(100, DoNothing()),
+			Name: "insert_error_11",
+			Builder: InsertMany(
+				"users",
+			).Columns("age", "name").
+				Values(10, 20).
+				OnConflict(100, DoNothing()),
 			ExpectedSql:  "",
 			ExpectedArgs: []any(nil),
 			ExpectedErr:  "unknown type: int must be a string or Alias",

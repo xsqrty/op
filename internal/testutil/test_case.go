@@ -1,9 +1,10 @@
 package testutil
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/driver"
-	"testing"
 )
 
 type TestCase struct {

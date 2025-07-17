@@ -2,8 +2,9 @@ package op
 
 import (
 	"fmt"
-	"github.com/xsqrty/op/driver"
 	"strings"
+
+	"github.com/xsqrty/op/driver"
 )
 
 type Column string
@@ -36,7 +37,7 @@ func (c Column) Sql(options *driver.SqlOptions) (string, []any, error) {
 	}
 
 	for i := 0; i < len(val); i++ {
-		var b = val[i]
+		b := val[i]
 		if options.SafeColumns && !isAllowedColumnByte(b) {
 			return "", nil, fmt.Errorf("target %q contains illegal character '%c'", c, b)
 		}
@@ -101,14 +102,13 @@ func (a *alias) Sql(options *driver.SqlOptions) (string, []any, error) {
 		return "", nil, err
 	}
 
-	aSql, aArgs, err := wrapAlias(a, options)
+	aSql, err := wrapAlias(a, options)
 	if err != nil {
 		return "", nil, err
 	}
 
 	sql = "(" + sql + ")"
 	sql += " AS " + aSql
-	args = append(args, aArgs...)
 	return sql, args, nil
 }
 
@@ -116,16 +116,16 @@ func ColumnAlias(col Column) Alias {
 	return &alias{isPureColumn: true, expr: col, name: string(col)}
 }
 
-func wrapAlias(al *alias, options *driver.SqlOptions) (string, []any, error) {
+func wrapAlias(al *alias, options *driver.SqlOptions) (string, error) {
 	var buf strings.Builder
 	if options.IsWrapAlias {
 		buf.WriteByte(options.WrapAliasBegin)
 	}
 
 	for i := 0; i < len(al.name); i++ {
-		var b = al.name[i]
+		b := al.name[i]
 		if options.SafeColumns && (!isAllowedColumnByte(b) || b == delimByte) {
-			return "", nil, fmt.Errorf("alias %q contains illegal character '%c'", al.name, b)
+			return "", fmt.Errorf("alias %q contains illegal character '%c'", al.name, b)
 		}
 
 		buf.WriteByte(b)
@@ -135,11 +135,15 @@ func wrapAlias(al *alias, options *driver.SqlOptions) (string, []any, error) {
 		buf.WriteByte(options.WrapAliasEnd)
 	}
 
-	return buf.String(), nil, nil
+	return buf.String(), nil
 }
 
 func isAllowedColumnByte(b byte) bool {
-	if b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '_' || b == '-' || b == '.' || b == '$' {
+	if b >= 'a' && b <= 'z' ||
+		b >= 'A' && b <= 'Z' ||
+		b >= '0' && b <= '9' ||
+		b == '_' || b == '-' ||
+		b == '.' || b == '$' {
 		return true
 	}
 

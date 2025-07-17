@@ -3,8 +3,9 @@ package op
 import (
 	"errors"
 	"fmt"
-	"github.com/xsqrty/op/driver"
 	"strings"
+
+	"github.com/xsqrty/op/driver"
 )
 
 type InsertBuilder interface {
@@ -191,7 +192,9 @@ func (ib *insertBuilder) Sql(options *driver.SqlOptions) (string, []any, error) 
 	return buf.String(), args, nil
 }
 
-func (ib *insertBuilder) PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error) {
+func (ib *insertBuilder) PreparedSql(
+	options *driver.SqlOptions,
+) (sql string, args []any, err error) {
 	return driver.Sql(ib, options)
 }
 
@@ -237,7 +240,7 @@ func (ib *insertBuilder) setInserting(inserting Inserting) {
 	ib.insertingKeys = nil
 	ib.insertingVals = nil
 
-	var vals []any
+	vals := make([]any, 0, len(inserting))
 	for key, val := range inserting {
 		ib.insertingKeys = append(ib.insertingKeys, Column(key))
 		vals = append(vals, val)

@@ -1,9 +1,10 @@
 package op
 
 import (
+	"testing"
+
 	"github.com/xsqrty/op/driver"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 func TestIf(t *testing.T) {
@@ -20,8 +21,11 @@ func TestIf(t *testing.T) {
 			ExpectedArgs: []any{70, "old", 30, "middle", "other"},
 		},
 		{
-			Name:         "handle_case_when_cond_error",
-			Builder:      If(Gte("unsafe+name", 70), driver.Value("old")).Else(driver.Value("other")),
+			Name: "handle_case_when_cond_error",
+			Builder: If(
+				Gte("unsafe+name", 70),
+				driver.Value("old"),
+			).Else(driver.Value("other")),
 			ExpectedSql:  "",
 			ExpectedArgs: []any(nil),
 			ExpectedErr:  `target "unsafe+name" contains illegal character '+'`,

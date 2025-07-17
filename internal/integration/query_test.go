@@ -2,13 +2,14 @@ package integration
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/orm"
-	"testing"
-	"time"
 )
 
 func TestQuery(t *testing.T) {
@@ -18,7 +19,9 @@ func TestQuery(t *testing.T) {
 			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
-			users, err := orm.Query[MockUser](op.Select().From(usersTable).OrderBy(op.Asc("id"))).GetMany(ctx, conn)
+			users, err := orm.Query[MockUser](
+				op.Select().From(usersTable).OrderBy(op.Asc("id")),
+			).GetMany(ctx, conn)
 			require.NoError(t, err)
 			require.Len(t, users, len(seed.Users))
 
@@ -35,11 +38,15 @@ func TestQuery(t *testing.T) {
 				}
 			}
 
-			users, err = orm.Query[MockUser](op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).GetMany(ctx, conn)
+			users, err = orm.Query[MockUser](
+				op.Select().From(usersTable).Where(op.Ne("deleted_at", nil)),
+			).GetMany(ctx, conn)
 			require.NoError(t, err)
 			require.Len(t, users, deletedUsersCount)
 
-			users, err = orm.Query[MockUser](op.Select().From(usersTable).Where(op.Eq("id", -1))).GetMany(ctx, conn)
+			users, err = orm.Query[MockUser](
+				op.Select().From(usersTable).Where(op.Eq("id", -1)),
+			).GetMany(ctx, conn)
 			require.NoError(t, err)
 			require.Len(t, users, 0)
 
@@ -55,11 +62,15 @@ func TestQueryOne(t *testing.T) {
 			seed, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
-			user, err := orm.Query[MockUser](op.Select().From(usersTable).Where(op.Eq("id", seed.Users[0].ID))).GetOne(ctx, conn)
+			user, err := orm.Query[MockUser](
+				op.Select().From(usersTable).Where(op.Eq("id", seed.Users[0].ID)),
+			).GetOne(ctx, conn)
 			require.NoError(t, err)
 			require.Equal(t, seed.Users[0].ID, user.ID)
 
-			user, err = orm.Query[MockUser](op.Select().From(usersTable).Where(op.Eq("id", -1))).GetOne(ctx, conn)
+			user, err = orm.Query[MockUser](
+				op.Select().From(usersTable).Where(op.Eq("id", -1)),
+			).GetOne(ctx, conn)
 			require.Nil(t, user)
 			require.Contains(t, err.Error(), "no rows in result set")
 
@@ -123,7 +134,11 @@ func TestQueryInsert(t *testing.T) {
 
 			require.Equal(t, data["name"], inserted.Name)
 			require.Equal(t, data["email"], inserted.Email)
-			require.Equal(t, data["created_at"].(time.Time).UnixMilli(), inserted.CreatedAt.UnixMilli())
+			require.Equal(
+				t,
+				data["created_at"].(time.Time).UnixMilli(),
+				inserted.CreatedAt.UnixMilli(),
+			)
 
 			newUsersCount, err := orm.Count(op.Select().From(usersTable)).With(ctx, conn)
 			require.NoError(t, err)
@@ -141,18 +156,20 @@ func TestQueryUpdate(t *testing.T) {
 			_, err := DataSeed(ctx, conn)
 			require.NoError(t, err)
 
-			deletedCount, err := orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, conn)
+			deletedCount, err := orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).
+				With(ctx, conn)
 			require.NoError(t, err)
-			require.Greater(t, deletedCount, uint64(0))
+			require.Greater(t, deletedCount, int64(0))
 
 			_, err = orm.Query[MockUser](op.Update(usersTable, op.Updates{
 				"deleted_at": nil,
 			}).Where(op.Ne("deleted_at", nil))).GetMany(ctx, conn)
 			require.NoError(t, err)
 
-			newDeletedCount, err := orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).With(ctx, conn)
+			newDeletedCount, err := orm.Count(op.Select().From(usersTable).Where(op.Ne("deleted_at", nil))).
+				With(ctx, conn)
 			require.NoError(t, err)
-			require.Equal(t, uint64(0), newDeletedCount)
+			require.Equal(t, int64(0), newDeletedCount)
 
 			return errRollback
 		}))

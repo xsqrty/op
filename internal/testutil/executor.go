@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/driver"

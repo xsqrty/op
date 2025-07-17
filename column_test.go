@@ -1,9 +1,10 @@
 package op
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 func TestColumn(t *testing.T) {

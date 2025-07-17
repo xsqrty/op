@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/driver"
-	"math"
 )
 
 type Paginator[T any] interface {
@@ -140,7 +141,11 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 	pg.rowsSbWrap.Limit(limit)
 	pg.rowsSbWrap.Offset(offset)
 
-	rows, err := Query[T](pg.rowsSb).Log(pg.loggerQuery).Wrap("result", pg.rowsSbWrap).GetMany(ctx, db)
+	rows, err := Query[T](
+		pg.rowsSb,
+	).Log(pg.loggerQuery).
+		Wrap("result", pg.rowsSbWrap).
+		GetMany(ctx, db)
 	if err != nil {
 		return nil, err
 	}
@@ -281,18 +286,31 @@ func (pg *paginate[T]) parseFilters(filters PaginateFilters, depth uint64) (op.A
 		if k == PaginateAnd || k == PaginateOr {
 			list, ok := v.([]any)
 			if !ok {
-				return nil, fmt.Errorf("paginate: group %q must be an array: %w", k, ErrFilterInvalid)
+				return nil, fmt.Errorf(
+					"paginate: group %q must be an array: %w",
+					k,
+					ErrFilterInvalid,
+				)
 			}
 
-			if len(list) > int(pg.maxSliceLen) {
-				return nil, fmt.Errorf("paginate: group %q value is too long: %w", k, ErrFilterSliceExceeded)
+			if uint64(len(list)) > pg.maxSliceLen {
+				return nil, fmt.Errorf(
+					"paginate: group %q value is too long: %w",
+					k,
+					ErrFilterSliceExceeded,
+				)
 			}
 
 			var group op.And
 			for i, item := range list {
 				itemMap, ok := item.(map[string]any)
 				if !ok {
-					return nil, fmt.Errorf("paginate: group %q[%d] is invalid: %w", k, i, ErrFilterInvalid)
+					return nil, fmt.Errorf(
+						"paginate: group %q[%d] is invalid: %w",
+						k,
+						i,
+						ErrFilterInvalid,
+					)
 				}
 
 				parsed, err := pg.parseFilters(itemMap, depth+1)
@@ -307,12 +325,12 @@ func (pg *paginate[T]) parseFilters(filters PaginateFilters, depth uint64) (op.A
 				continue
 			}
 
-			if k == PaginateAnd {
+			switch k {
+			case PaginateAnd:
 				and = appendToAndGroup[op.And](and, group)
-			} else if k == PaginateOr {
+			default:
 				and = appendToAndGroup[op.Or](and, op.Or(group))
 			}
-
 		} else if isPrimitiveValue(v) {
 			if !pg.isAllowedKey(k) {
 				return nil, fmt.Errorf("paginate: filter key %q is not allowed: %w", k, ErrDisallowedKey)
@@ -351,8 +369,13 @@ func (pg *paginate[T]) parseFilters(filters PaginateFilters, depth uint64) (op.A
 func (pg *paginate[T]) checkOperatorValue(operator, key string, value any) error {
 	if operator == PaginateIn || operator == PaginateNotIn {
 		if s, ok := value.([]any); ok {
-			if len(s) > int(pg.maxSliceLen) {
-				return fmt.Errorf("paginate: %q operator %q value is too long: %w", key, operator, ErrFilterSliceExceeded)
+			if uint64(len(s)) > pg.maxSliceLen {
+				return fmt.Errorf(
+					"paginate: %q operator %q value is too long: %w",
+					key,
+					operator,
+					ErrFilterSliceExceeded,
+				)
 			}
 
 			if isPrimitiveSlice(s) {
@@ -360,14 +383,24 @@ func (pg *paginate[T]) checkOperatorValue(operator, key string, value any) error
 			}
 		}
 
-		return fmt.Errorf("paginate: invalid value: %q operator %q: %w", key, operator, ErrFilterInvalid)
+		return fmt.Errorf(
+			"paginate: invalid value: %q operator %q: %w",
+			key,
+			operator,
+			ErrFilterInvalid,
+		)
 	}
 
 	if isPrimitiveValue(value) {
 		return nil
 	}
 
-	return fmt.Errorf("paginate: invalid value: %q operator %q: %w", key, operator, ErrFilterInvalid)
+	return fmt.Errorf(
+		"paginate: invalid value: %q operator %q: %w",
+		key,
+		operator,
+		ErrFilterInvalid,
+	)
 }
 
 func getFilterOperator(operator, key string, value any) (driver.Sqler, error) {
@@ -393,7 +426,11 @@ func getFilterOperator(operator, key string, value any) (driver.Sqler, error) {
 			}
 		}
 
-		return nil, fmt.Errorf("paginate: invalid value for %q operator: %w", operator, ErrFilterInvalid)
+		return nil, fmt.Errorf(
+			"paginate: invalid value for %q operator: %w",
+			operator,
+			ErrFilterInvalid,
+		)
 	case PaginateLike:
 		return op.Like(op.Upper(key), "%"+fmt.Sprint(value)+"%"), nil
 	case PaginateLeftLike:

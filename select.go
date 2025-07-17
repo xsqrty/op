@@ -2,8 +2,9 @@ package op
 
 import (
 	"fmt"
-	"github.com/xsqrty/op/driver"
 	"strings"
+
+	"github.com/xsqrty/op/driver"
 )
 
 type SelectBuilder interface {
@@ -38,9 +39,11 @@ type Order interface {
 	Sql(options *driver.SqlOptions) (string, []any, error)
 }
 
-type orderType int
-type joinType int
-type nullsOrderType int
+type (
+	orderType      int
+	joinType       int
+	nullsOrderType int
+)
 
 type order struct {
 	target    any
@@ -153,7 +156,10 @@ func (sb *selectBuilder) Having(exp driver.Sqler) SelectBuilder {
 }
 
 func (sb *selectBuilder) Join(table any, on driver.Sqler) SelectBuilder {
-	sb.joins = append(sb.joins, join{table: sb.parseJoinTable(table), on: on, joinType: joinDefault})
+	sb.joins = append(
+		sb.joins,
+		join{table: sb.parseJoinTable(table), on: on, joinType: joinDefault},
+	)
 	return sb
 }
 
@@ -262,7 +268,10 @@ func (sb *selectBuilder) Sql(options *driver.SqlOptions) (sql string, args []any
 			buf.WriteString(sql)
 
 			if sb.joins[i].on == nil {
-				return "", nil, fmt.Errorf("%s operation requires an ON clause to specify join condition", sb.joins[i].joinType)
+				return "", nil, fmt.Errorf(
+					"%s operation requires an ON clause to specify join condition",
+					sb.joins[i].joinType,
+				)
 			}
 
 			buf.WriteString(" ON ")
@@ -343,7 +352,9 @@ func (sb *selectBuilder) Sql(options *driver.SqlOptions) (sql string, args []any
 	return buf.String(), args, nil
 }
 
-func (sb *selectBuilder) PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error) {
+func (sb *selectBuilder) PreparedSql(
+	options *driver.SqlOptions,
+) (sql string, args []any, err error) {
 	return driver.Sql(sb, options)
 }
 

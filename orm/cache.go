@@ -1,10 +1,11 @@
 package orm
 
 import (
+	"sync"
+
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/cache"
 	"github.com/xsqrty/op/driver"
-	"sync"
 )
 
 type ReturnableContainer interface {
@@ -87,7 +88,6 @@ func (rc *retCache) Sql(options *driver.SqlOptions) (string, []any, error) {
 func (rc *retCache) PreparedSql(options *driver.SqlOptions) (string, []any, error) {
 	rc.container.resOnce.Do(func() {
 		sql, args, err := rc.container.ret.PreparedSql(options)
-
 		if err != nil {
 			rc.container.res.Err = err
 			return

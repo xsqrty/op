@@ -2,8 +2,9 @@ package op
 
 import (
 	"fmt"
-	"github.com/xsqrty/op/driver"
 	"strings"
+
+	"github.com/xsqrty/op/driver"
 )
 
 type UpdateBuilder interface {
@@ -125,7 +126,9 @@ func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []any, error) 
 	return buf.String(), args, nil
 }
 
-func (ub *updateBuilder) PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error) {
+func (ub *updateBuilder) PreparedSql(
+	options *driver.SqlOptions,
+) (sql string, args []any, err error) {
 	return driver.Sql(ub, options)
 }
 

@@ -52,7 +52,7 @@ type User struct {
 ctx := context.Background()
 
 // Create postgres connection pool
-pool, err := db.OpenPostgres(ctx, "postgres://...")
+pool, err := postgres.Open(ctx, "postgres://postgres:postgres@localhost:5432/op?sslmode=disable")
 if err != nil {
   panic(err)
 }
@@ -72,7 +72,7 @@ user := &User{
   Age:   40,
 }
 
-err := orm.Put("users", user).With(ctx, pool)
+err = orm.Put("users", user).With(ctx, pool)
 if err != nil {
   panic(err)
 }
@@ -121,15 +121,17 @@ When an open connection, a `.Ping()` is automatically performed to ensure a succ
 
 ### Postgres
 
-Using [pgx](https://github.com/jackc/pgx/tree/master) driver
+Using [pgx](https://github.com/jackc/pgx/tree/master) driver by default
 
 ```go
-pool, err := db.OpenPostgres(
+import "github.com/xsqrty/op/db/postgres"
+
+pool, err := postgres.Open(
   ctx,
   dsn,
-  db.WithPgxHealthCheckPeriod(time.Minute),
-  db.WithPgxMinIdleConns(0),
-  // ...other options db.WithPgx...
+  postgres.WithHealthCheckPeriod(time.Minute),
+  postgres.WithMinIdleConns(0),
+  // ...other options postgres.With...
 )
 
 if err != nil {
@@ -139,16 +141,17 @@ if err != nil {
 
 ### Sqlite
 
-Using [sqlite3](https://github.com/mattn/go-sqlite3) driver
+Using [sqlite3](https://github.com/mattn/go-sqlite3) driver by default
 
 ```go
-pool, err := db.OpenSqlite(
-  ctx,
+import "github.com/xsqrty/op/db/sqlite"
+
+pool, err := sqlite.Open(
   dsn,
-  db.WithConnMaxIdleTime(5*time.Minute),
-  db.WithConnMaxLifetime(5*time.Minute),
-  db.WithMaxIdleConns(2),
-  db.WithMaxOpenConns(10),
+  sqlite.WithConnMaxIdleTime(5*time.Minute),
+  sqlite.WithConnMaxLifetime(5*time.Minute),
+  sqlite.WithMaxIdleConns(2),
+  sqlite.WithMaxOpenConns(10),
 )
 
 if err != nil {
@@ -461,7 +464,7 @@ res, err := Paginate[User]("users", &paginateRequest).
 # Build SQL
 
 ```go
-options := driver.NewPostgresSqlOptions() // driver.NewSqliteSqlOptions() for sqlite syntax
+options := postgres.NewSqlOptions() // sqlite.NewSqlOptions() for sqlite syntax
 sql, args, err := driver.Sql(op.Select().From("Users"), options)
 ```
 
@@ -500,7 +503,7 @@ sql, args, err := pool.Sql(op.Select().From("Users"))
 * Sql(options *driver.SqlOptions) (sql string, args []any, err error) - builder
 
 ```go
-options := driver.NewPostgresSqlOptions()
+options := postgres.NewSqlOptions()
 multiple := op.Mul("count", driver.Value(100))
 sql, args, err := driver.Sql(
   op.Select(
@@ -743,7 +746,7 @@ All math operations interpret string values as columns, if you want to use a str
 Operations `op.Add` `op.Sub` `op.Div` `op.Mul`
 
 ```go
-options := driver.NewPostgresSqlOptions()
+options := postgres.NewSqlOptions()
 sql, args, err := driver.Sql(op.Sub(1, op.Mul("age", 2)), options)
 ```
 
@@ -823,7 +826,7 @@ If you need to perform a heavy query, then building SQL may take some time.
 You can use a query caching tool `cache.New()` for native usage or `orm.NewReturnableCache` for use with orm
 
 ```go
-options := driver.NewPostgresSqlOptions()
+options := postgres.NewSqlOptions()
 getById := cache.New(
   op.Select().
     From("users").

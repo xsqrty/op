@@ -1,8 +1,9 @@
 package op
 
 import (
-	"github.com/xsqrty/op/driver"
 	"strings"
+
+	"github.com/xsqrty/op/driver"
 )
 
 type Cases interface {

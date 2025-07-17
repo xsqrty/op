@@ -1,9 +1,10 @@
 package op
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 func TestUpdate(t *testing.T) {
@@ -31,14 +32,21 @@ func TestUpdate(t *testing.T) {
 			ExpectedArgs: []any{"value"},
 		},
 		{
-			Name:         "update_where",
-			Builder:      Update(ColumnAlias("users"), Updates{"key": "value"}).Where(Like("name", "Al%")),
+			Name: "update_where",
+			Builder: Update(
+				ColumnAlias("users"),
+				Updates{"key": "value"},
+			).Where(Like("name", "Al%")),
 			ExpectedSql:  `UPDATE "users" SET "key"=? WHERE "name" LIKE ?`,
 			ExpectedArgs: []any{"value", "Al%"},
 		},
 		{
-			Name:         "update_where",
-			Builder:      Update(ColumnAlias("users"), Updates{"key": "value"}).Where(Like("name", "Al%")).Returning("id", ColumnAlias("name")),
+			Name: "update_where",
+			Builder: Update(
+				ColumnAlias("users"),
+				Updates{"key": "value"},
+			).Where(Like("name", "Al%")).
+				Returning("id", ColumnAlias("name")),
 			ExpectedSql:  `UPDATE "users" SET "key"=? WHERE "name" LIKE ? RETURNING "id","name"`,
 			ExpectedArgs: []any{"value", "Al%"},
 		},

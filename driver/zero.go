@@ -7,11 +7,13 @@ import (
 	"time"
 )
 
-type ZeroFloat64 float64
-type ZeroString string
-type ZeroInt64 int64
-type ZeroTime time.Time
-type ZeroBool bool
+type (
+	ZeroFloat64 float64
+	ZeroString  string
+	ZeroInt64   int64
+	ZeroTime    time.Time
+	ZeroBool    bool
+)
 
 var (
 	timeNull  = []byte("null")
@@ -37,7 +39,8 @@ func (zt ZeroTime) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements the [encoding/json.Unmarshaler] interface.
 func (zt *ZeroTime) UnmarshalJSON(data []byte) error {
-	if len(data) == 0 || bytes.Equal(data, timeNull) || bytes.Equal(data, timeEmpty) || bytes.Equal(data, timeZero) {
+	if len(data) == 0 || bytes.Equal(data, timeNull) || bytes.Equal(data, timeEmpty) ||
+		bytes.Equal(data, timeZero) {
 		*zt = ZeroTime(time.Time{})
 		return nil
 	}

@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"slices"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/driver"
 	"github.com/xsqrty/op/orm"
-	"slices"
-	"testing"
 )
 
 type PaginateMockUser struct {
@@ -58,7 +59,7 @@ func TestPaginate(t *testing.T) {
 				LeftJoin(companiesTable, op.Eq("company_id", op.Column("companies.id"))).
 				With(ctx, conn)
 
-			deletedCount := 0
+			var deletedCount uint64
 			for _, user := range seed.Users {
 				if user.DeletedAt.Valid {
 					deletedCount++
@@ -67,7 +68,7 @@ func TestPaginate(t *testing.T) {
 
 			require.NoError(t, err)
 			require.NotNil(t, res)
-			require.Equal(t, uint64(deletedCount), res.TotalRows)
+			require.Equal(t, deletedCount, res.TotalRows)
 
 			if res.TotalRows > 0 {
 				for _, row := range res.Rows {

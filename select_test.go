@@ -1,9 +1,10 @@
 package op
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 type orderCase struct {
@@ -36,32 +37,52 @@ func TestSelect(t *testing.T) {
 			ExpectedArgs: []any(nil),
 		},
 		{
-			Name:         "join",
-			Builder:      Select("id", "name").From("users").Join("roles", Eq("user_id", Column("users.id"))),
+			Name: "join",
+			Builder: Select(
+				"id",
+				"name",
+			).From("users").
+				Join("roles", Eq("user_id", Column("users.id"))),
 			ExpectedSql:  `SELECT "id","name" FROM "users" JOIN "roles" ON "user_id" = "users"."id"`,
 			ExpectedArgs: []any(nil),
 		},
 		{
-			Name:         "inner_join",
-			Builder:      Select("id", "name").From("users").InnerJoin("roles", Eq("user_id", Column("users.id"))),
+			Name: "inner_join",
+			Builder: Select(
+				"id",
+				"name",
+			).From("users").
+				InnerJoin("roles", Eq("user_id", Column("users.id"))),
 			ExpectedSql:  `SELECT "id","name" FROM "users" INNER JOIN "roles" ON "user_id" = "users"."id"`,
 			ExpectedArgs: []any(nil),
 		},
 		{
-			Name:         "left_join",
-			Builder:      Select("id", "name").From("users").LeftJoin(ColumnAlias("roles"), Eq("user_id", Column("users.id"))),
+			Name: "left_join",
+			Builder: Select(
+				"id",
+				"name",
+			).From("users").
+				LeftJoin(ColumnAlias("roles"), Eq("user_id", Column("users.id"))),
 			ExpectedSql:  `SELECT "id","name" FROM "users" LEFT JOIN "roles" ON "user_id" = "users"."id"`,
 			ExpectedArgs: []any(nil),
 		},
 		{
-			Name:         "right_join",
-			Builder:      Select("id", "name").From("users").RightJoin("roles", Eq("user_id", Column("users.id"))),
+			Name: "right_join",
+			Builder: Select(
+				"id",
+				"name",
+			).From("users").
+				RightJoin("roles", Eq("user_id", Column("users.id"))),
 			ExpectedSql:  `SELECT "id","name" FROM "users" RIGHT JOIN "roles" ON "user_id" = "users"."id"`,
 			ExpectedArgs: []any(nil),
 		},
 		{
-			Name:         "cross_join",
-			Builder:      Select("id", "name").From("users").CrossJoin("roles", Eq("user_id", Column("users.id"))),
+			Name: "cross_join",
+			Builder: Select(
+				"id",
+				"name",
+			).From("users").
+				CrossJoin("roles", Eq("user_id", Column("users.id"))),
 			ExpectedSql:  `SELECT "id","name" FROM "users" CROSS JOIN "roles" ON "user_id" = "users"."id"`,
 			ExpectedArgs: []any(nil),
 		},
@@ -93,8 +114,12 @@ func TestSelect(t *testing.T) {
 			ExpectedArgs: []any{2},
 		},
 		{
-			Name:         "group_by",
-			Builder:      Select("id", ColumnAlias("name")).From("users").GroupBy("category", Column("id")),
+			Name: "group_by",
+			Builder: Select(
+				"id",
+				ColumnAlias("name"),
+			).From("users").
+				GroupBy("category", Column("id")),
 			ExpectedSql:  `SELECT "id","name" FROM "users" GROUP BY "category","id"`,
 			ExpectedArgs: []any(nil),
 		},

@@ -3,10 +3,11 @@ package orm
 import (
 	"context"
 	"fmt"
-	"github.com/xsqrty/op"
-	"github.com/xsqrty/op/cache"
 	"reflect"
 	"sync"
+
+	"github.com/xsqrty/op"
+	"github.com/xsqrty/op/cache"
 )
 
 type PutBuilder[T any] interface {
@@ -82,7 +83,8 @@ func (p *put[T]) getReturnable() (op.Returnable, error) {
 			continue
 		}
 
-		if fields[i] == md.primaryAsTag && pointers[i] != nil && reflect.ValueOf(pointers[i]).Elem().IsZero() {
+		if fields[i] == md.primaryAsTag && pointers[i] != nil &&
+			reflect.ValueOf(pointers[i]).Elem().IsZero() {
 			usePrimaryKey = false
 			continue
 		}
@@ -93,7 +95,12 @@ func (p *put[T]) getReturnable() (op.Returnable, error) {
 	return p.getCache(md, pointers, fields, usePrimaryKey).Use(args), nil
 }
 
-func (p *put[T]) getCache(md *modelDetails, pointers []any, fields []string, usePrimaryKey bool) ReturnableContainer {
+func (p *put[T]) getCache(
+	md *modelDetails,
+	pointers []any,
+	fields []string,
+	usePrimaryKey bool,
+) ReturnableContainer {
 	cacheKey := p.table
 	if usePrimaryKey {
 		cacheKey += "_primary"
@@ -116,7 +123,8 @@ func (p *put[T]) getCache(md *modelDetails, pointers []any, fields []string, use
 		}
 
 		aliases = append(aliases, op.ColumnAlias(op.Column(fields[i])))
-		if fields[i] == md.primaryAsTag && pointers[i] != nil && reflect.ValueOf(pointers[i]).Elem().IsZero() {
+		if fields[i] == md.primaryAsTag && pointers[i] != nil &&
+			reflect.ValueOf(pointers[i]).Elem().IsZero() {
 			continue
 		}
 

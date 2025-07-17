@@ -2,13 +2,14 @@ package integration
 
 import (
 	"context"
+	"strings"
+	"testing"
+
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/orm"
-	"strings"
-	"testing"
 )
 
 func TestTransact_Commit(t *testing.T) {
@@ -23,9 +24,10 @@ func TestTransact_Commit(t *testing.T) {
 			return err
 		}))
 
-		count, err := orm.Count(op.Select().From(countriesTable).Where(op.Eq("name", name))).With(ctx, conn)
+		count, err := orm.Count(op.Select().From(countriesTable).Where(op.Eq("name", name))).
+			With(ctx, conn)
 		require.NoError(t, err)
-		require.Equal(t, uint64(1), count)
+		require.Equal(t, int64(1), count)
 	})
 }
 
@@ -37,7 +39,6 @@ func TestTransact_Rollback(t *testing.T) {
 			err := orm.Put(countriesTable, &MockCountry{
 				Name: name,
 			}).With(ctx, conn)
-
 			if err != nil {
 				return err
 			}
@@ -60,8 +61,9 @@ func TestTransact_Rollback(t *testing.T) {
 
 			return false
 		})
-		count, err := orm.Count(op.Select().From(countriesTable).Where(op.Eq("name", name))).With(ctx, conn)
+		count, err := orm.Count(op.Select().From(countriesTable).Where(op.Eq("name", name))).
+			With(ctx, conn)
 		require.NoError(t, err)
-		require.Equal(t, uint64(0), count)
+		require.Equal(t, int64(0), count)
 	})
 }

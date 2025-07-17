@@ -3,10 +3,11 @@ package orm
 import (
 	"errors"
 	"fmt"
-	"github.com/xsqrty/op"
 	"reflect"
 	"strings"
 	"sync"
+
+	"github.com/xsqrty/op"
 )
 
 type modelSetters struct {
@@ -41,8 +42,10 @@ var (
 	ErrFieldNotDescribe       = errors.New("target is not described in the struct")
 )
 
-var modelCache = make(map[modelCacheKey]*modelDetails)
-var modelCacheLock sync.RWMutex
+var (
+	modelCache     = make(map[modelCacheKey]*modelDetails)
+	modelCacheLock sync.RWMutex
+)
 
 func findAliasFullName[T any](g *query[T], data *modelDetails, shortValue string) []string {
 	var aliases []string
@@ -58,7 +61,11 @@ func findAliasFullName[T any](g *query[T], data *modelDetails, shortValue string
 	return aliases
 }
 
-func getSettersByTags(md *modelDetails, table string, tags []string) (map[string]modelSetters, error) {
+func getSettersByTags(
+	md *modelDetails,
+	table string,
+	tags []string,
+) (map[string]modelSetters, error) {
 	setters := make(map[string]modelSetters, len(md.tags))
 	for _, tag := range tags {
 		path := md.mapping[table][tag]

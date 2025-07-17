@@ -1,9 +1,10 @@
 package op
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op/driver"
-	"testing"
 )
 
 func TestExprOrCol(t *testing.T) {
@@ -44,7 +45,11 @@ func TestExprOrVal(t *testing.T) {
 
 func TestConcatUpdates(t *testing.T) {
 	t.Parallel()
-	sql, args, err := concatUpdates([]Column{"age", "name"}, []driver.Sqler{driver.Value(100), driver.Value("Alex")}, options)
+	sql, args, err := concatUpdates(
+		[]Column{"age", "name"},
+		[]driver.Sqler{driver.Value(100), driver.Value("Alex")},
+		options,
+	)
 
 	require.NoError(t, err)
 	require.Equal(t, `"age"=?,"name"=?`, sql)

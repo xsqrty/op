@@ -2,6 +2,7 @@ package orm
 
 import (
 	"context"
+
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/db"
 	"github.com/xsqrty/op/driver"
@@ -25,7 +26,6 @@ type query[T any] struct {
 	ret         op.Returnable
 	logger      LoggerHandler
 	wrapper     *wrapper
-	aliasMapper func(op.Alias)
 	usingTables []string
 }
 

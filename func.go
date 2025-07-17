@@ -2,6 +2,7 @@ package op
 
 import (
 	"fmt"
+
 	"github.com/xsqrty/op/driver"
 )
 

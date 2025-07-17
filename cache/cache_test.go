@@ -1,11 +1,12 @@
 package cache
 
 import (
+	"testing"
+
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/require"
 	"github.com/xsqrty/op"
 	"github.com/xsqrty/op/internal/testutil"
-	"testing"
 )
 
 func TestCache(t *testing.T) {
@@ -56,28 +57,53 @@ func BenchmarkSimpleCache(b *testing.B) {
 	c := New(op.Select().From("users").Where(op.Eq("id", Arg("id"))))
 	options := testutil.NewDefaultOptions()
 	for i := 0; i < b.N; i++ {
-		c.Use(Args{"id": 1}).Sql(options)
+		_, _, err := c.Use(Args{"id": 1}).Sql(options)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkSimpleNoCache(b *testing.B) {
 	options := testutil.NewDefaultOptions()
 	for i := 0; i < b.N; i++ {
-		op.Select().From("users").Where(op.Eq("id", 1)).Sql(options)
+		_, _, err := op.Select().From("users").Where(op.Eq("id", 1)).Sql(options)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkHeavyCache(b *testing.B) {
-	c := New(op.Select().From("users").OrderBy(op.AscNullsFirst("created_at")).Join("companies", op.Eq("users.company_id", op.Column("companies.id"))).GroupBy("company_id").Where(op.Eq("id", Arg("id"))))
+	c := New(
+		op.Select().
+			From("users").
+			OrderBy(op.AscNullsFirst("created_at")).
+			Join("companies", op.Eq("users.company_id", op.Column("companies.id"))).
+			GroupBy("company_id").
+			Where(op.Eq("id", Arg("id"))),
+	)
 	options := testutil.NewDefaultOptions()
 	for i := 0; i < b.N; i++ {
-		c.Use(Args{"id": 1}).Sql(options)
+		_, _, err := c.Use(Args{"id": 1}).Sql(options)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkHeavyNoCache(b *testing.B) {
 	options := testutil.NewDefaultOptions()
 	for i := 0; i < b.N; i++ {
-		op.Select().From("users").OrderBy(op.AscNullsFirst("created_at")).Join("companies", op.Eq("users.company_id", op.Column("companies.id"))).GroupBy("company_id").Where(op.Eq("id", 1)).Sql(options)
+		_, _, err := op.Select().
+			From("users").
+			OrderBy(op.AscNullsFirst("created_at")).
+			Join("companies", op.Eq("users.company_id", op.Column("companies.id"))).
+			GroupBy("company_id").
+			Where(op.Eq("id", 1)).
+			Sql(options)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
