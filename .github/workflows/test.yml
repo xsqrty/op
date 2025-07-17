@@ -6,6 +6,7 @@ on:
     branches: [ 'main' ]
 jobs:
   lint:
+    name: Run linters
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -13,7 +14,7 @@ jobs:
         with:
           go-version-file: './go.mod'
       - name: Run linters
-        uses: golangci/golangci-lint-action@v5
+        uses: golangci/golangci-lint-action@v8
         with:
           args: --verbose
   test:
