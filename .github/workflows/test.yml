@@ -23,7 +23,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        go: [ '1.23', 'latest' ]
+        go: [ '1.23', 'stable' ]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -56,7 +56,7 @@ jobs:
       - name: Download coverage artifact
         uses: actions/download-artifact@v4
         with:
-          name: coverage-latest
+          name: coverage-stable
 
       - name: Upload coverage
         uses: coverallsapp/github-action@v2
