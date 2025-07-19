@@ -10,14 +10,17 @@ import (
 	"github.com/xsqrty/op"
 )
 
+// modelSetters represents a structure to define the path to fields in a model for setter operations.
 type modelSetters struct {
 	path []int
 }
 
+// tagDetails represents the properties of a tag.
 type tagDetails struct {
 	isAggregated bool
 }
 
+// modelDetails represents metadata and mappings for a model's fields, tags, and their relationships within a table.
 type modelDetails struct {
 	primary      string
 	primaryAsTag string
@@ -28,11 +31,13 @@ type modelDetails struct {
 	tagsDetails  map[string]map[string]*tagDetails
 }
 
+// modelCacheKey represents a composite key for caching model details, combining the model's reflect.Type and table name.
 type modelCacheKey struct {
 	typ   reflect.Type
 	table string
 }
 
+// opTag is a constant used as the key for extracting specific struct tag values.
 const opTag = "op"
 
 var (
@@ -43,10 +48,13 @@ var (
 )
 
 var (
-	modelCache     = make(map[modelCacheKey]*modelDetails)
+	// modelCache is a thread-safe cache storing model details keyed by modelCacheKey.
+	modelCache = make(map[modelCacheKey]*modelDetails)
+	// modelCacheLock is a read-write mutex ensuring safe concurrent access to modelCache.
 	modelCacheLock sync.RWMutex
 )
 
+// findAliasFullName retrieves matching full alias names from the provided data mapping for a given short alias value.
 func findAliasFullName[T any](g *query[T], data *modelDetails, shortValue string) []string {
 	var aliases []string
 
@@ -61,6 +69,8 @@ func findAliasFullName[T any](g *query[T], data *modelDetails, shortValue string
 	return aliases
 }
 
+// getSettersByTags retrieves model setters for the specified tags and table from the given model details.
+// Returns an error if any tag is not found.
 func getSettersByTags(
 	md *modelDetails,
 	table string,
@@ -80,6 +90,8 @@ func getSettersByTags(
 	return setters, nil
 }
 
+// getModelDetails initializes and retrieves model details for a given target struct and table name.
+// Returns a pointer to modelDetails or an error if the target is invalid.
 func getModelDetails(table string, target any) (*modelDetails, error) {
 	val := reflect.ValueOf(target)
 	kind := val.Kind()
@@ -123,6 +135,9 @@ func getModelDetails(table string, target any) (*modelDetails, error) {
 	return result, nil
 }
 
+// collectModelDetails processes a struct's fields, extracting metadata based on struct tags and populating a modelDetails instance.
+// table specifies the prefix for tag paths; val is the struct being processed; a path tracks field hierarchy;
+// a result is the modelDetails struct being populated with field data, mappings, and metadata.
 func collectModelDetails(table string, val reflect.Value, path []int, result *modelDetails) {
 	typ := val.Type()
 	for i := 0; i < val.NumField(); i++ {
@@ -182,6 +197,11 @@ func collectModelDetails(table string, val reflect.Value, path []int, result *mo
 	}
 }
 
+// getKeysPointers extracts the pointers to struct fields from a target based on the provided keys and setters mapping.
+// The target must be a non-nil pointer to a struct; otherwise, an error is returned.
+// Setters define field paths based on keys, enabling navigation within nested or embedded struct fields.
+// Keys represent the field identifiers for which pointers are extracted.
+// Returns a slice of pointers corresponding to the requested keys or an error if the keys are invalid or the target is invalid.
 func getKeysPointers(target any, setters map[string]modelSetters, keys []string) ([]any, error) {
 	valueOf := reflect.ValueOf(target)
 	if valueOf.Kind() != reflect.Ptr {
@@ -217,6 +237,8 @@ func getKeysPointers(target any, setters map[string]modelSetters, keys []string)
 	return result, nil
 }
 
+// setQueryReturning processes the query's returning columns, resolves aliases, and maps model details to the query.
+// It configures and sets returning fields in the query and returns model details, keys, or an error if encountered.
 func setQueryReturning[T any](q *query[T], target *T) (*modelDetails, []string, error) {
 	data, err := getModelDetails(q.with, target)
 	if err != nil {

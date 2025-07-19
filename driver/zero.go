@@ -8,11 +8,16 @@ import (
 )
 
 type (
+	// ZeroFloat64 is a float64 type that implements database/sql interfaces for scanning and value operations.
 	ZeroFloat64 float64
-	ZeroString  string
-	ZeroInt64   int64
-	ZeroTime    time.Time
-	ZeroBool    bool
+	// ZeroString represents a string type with the default zero-value behavior for database operations.
+	ZeroString string
+	// ZeroInt64 is a custom type based on int64 that provides additional functionality, such as implementing database interfaces.
+	ZeroInt64 int64
+	// ZeroTime is a wrapper around time.Time to handle zero-value and custom JSON marshaling/unmarshaling logic.
+	ZeroTime time.Time
+	// ZeroBool represents a bool type that supports SQL null handling and implements the driver.Valuer and Scanner interfaces.
+	ZeroBool bool
 )
 
 var (

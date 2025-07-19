@@ -151,7 +151,7 @@ func (ub *updateBuilder) PreparedSql(
 	return driver.Sql(ub, options)
 }
 
-// LimitReturningOne sets the SELECT statement to return only one row.
+// LimitReturningOne sets return only one row.
 // The method implements the interface Returnable.
 func (ub *updateBuilder) LimitReturningOne() {}
 

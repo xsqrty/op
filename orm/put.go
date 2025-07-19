@@ -10,19 +10,25 @@ import (
 	"github.com/xsqrty/op/cache"
 )
 
+// PutBuilder provides methods to configure and execute an insert or update operation for a given model.
 type PutBuilder[T any] interface {
+	// Log sets a LoggerHandler to log executed queries.
 	Log(handler LoggerHandler) PutBuilder[T]
+	// With executes the insert/update operation within the provided context and database.
 	With(ctx context.Context, db Queryable) error
 }
 
+// put represents a structure for performing PUT operations with a specified table and model item.
 type put[T any] struct {
 	logger LoggerHandler
 	table  string
 	item   *T
 }
 
+// putCache is a concurrent map used to store and retrieve cached ReturnableContainer instances for specific operations.
 var putCache sync.Map
 
+// Put creates a PutBuilder to insert or update a record in the specified table based on the provided model.
 func Put[T any](table string, model *T) PutBuilder[T] {
 	return &put[T]{
 		table: table,
@@ -30,6 +36,7 @@ func Put[T any](table string, model *T) PutBuilder[T] {
 	}
 }
 
+// With executes a query using context and database, updating the item with the result or returning an error if it fails.
 func (p *put[T]) With(ctx context.Context, db Queryable) error {
 	ret, err := p.getReturnable()
 	if err != nil {
@@ -45,11 +52,13 @@ func (p *put[T]) With(ctx context.Context, db Queryable) error {
 	return nil
 }
 
+// Log sets the LoggerHandler for the put operation to log queries, arguments, and errors, and returns the PutBuilder.
 func (p *put[T]) Log(lh LoggerHandler) PutBuilder[T] {
 	p.logger = lh
 	return p
 }
 
+// getReturnable processes the input item and generates a returnable SQL operation or an error if processing fails.
 func (p *put[T]) getReturnable() (op.Returnable, error) {
 	md, err := getModelDetails(p.table, p.item)
 	if err != nil {
@@ -95,6 +104,8 @@ func (p *put[T]) getReturnable() (op.Returnable, error) {
 	return p.getCache(md, pointers, fields, usePrimaryKey).Use(args), nil
 }
 
+// getCache retrieves or initializes a cached ReturnableContainer based on metadata, fields, pointers, and key usage.
+// It manages caching using a unique cache key, ensures thread-safety, and assembles SQL operations for the insert.
 func (p *put[T]) getCache(
 	md *modelDetails,
 	pointers []any,

@@ -10,30 +10,49 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+// Paginator defines methods for handling SQL query pagination with advanced configurations and result processing.
 type Paginator[T any] interface {
+	// WhiteList restricts the selectable fields in the query to the specified whitelist of field names.
 	WhiteList(whitelist ...string) Paginator[T]
+	// Fields sets the SQL fields or expressions to be selected in the query with optional aliases for the result set.
 	Fields(fields ...op.Alias) Paginator[T]
+	// MaxFilterDepth sets the maximum pagination depth for the filter and returns a Paginator with the specified depth.
 	MaxFilterDepth(depth uint64) Paginator[T]
+	// MaxSliceLen sets the maximum number of items allowed in the slice for the paginator and returns the updated paginator.
 	MaxSliceLen(maxLen uint64) Paginator[T]
+	// MaxLimit sets the maximum number of items per page for the pagination. Returns the updated Paginator instance.
 	MaxLimit(limit uint64) Paginator[T]
+	// MinLimit sets the minimum limit for pagination and ensures it does not exceed the specified value. Returns the updated Paginator.
 	MinLimit(limit uint64) Paginator[T]
+	// Where applies a filtering condition to the query based on the provided Sqler expression and returns an updated paginator.
 	Where(exp driver.Sqler) Paginator[T]
+	// Join adds an SQL JOIN clause to the query with the specified table and join condition.
 	Join(table any, on driver.Sqler) Paginator[T]
+	// LeftJoin adds a LEFT JOIN clause to the query using the specified table and join condition.
 	LeftJoin(table any, on driver.Sqler) Paginator[T]
+	// RightJoin adds a RIGHT JOIN clause to the SQL query with the specified table and join condition.
 	RightJoin(table any, on driver.Sqler) Paginator[T]
+	// InnerJoin adds an INNER JOIN clause to the query using the specified table and condition.
 	InnerJoin(table any, on driver.Sqler) Paginator[T]
+	// CrossJoin adds a CROSS JOIN clause to the query with the specified table and ON condition, returning the Paginator instance.
 	CrossJoin(table any, on driver.Sqler) Paginator[T]
+	// GroupBy groups the items in the pagination based on the specified grouping criteria provided as arguments.
 	GroupBy(groups ...any) Paginator[T]
+	// LogQuery executes a query with logging by utilizing the provided LoggerHandler and returns a paginated result.
 	LogQuery(handler LoggerHandler) Paginator[T]
+	// LogCounter returns a Paginator instance of type T that logs information through the provided LoggerHandler.
 	LogCounter(handler LoggerHandler) Paginator[T]
+	// With executes the paginated query using the provided context and database, returning the results or an error.
 	With(ctx context.Context, db Queryable) (*PaginateResult[T], error)
 }
 
+// PaginateResult represents the result of a paginated query containing the total row count and the fetched rows.
 type PaginateResult[T any] struct {
 	TotalRows uint64
 	Rows      []*T
 }
 
+// PaginateRequest defines pagination parameters including ordering, filters, limit, and offset for data retrieval.
 type PaginateRequest struct {
 	Orders  []PaginateOrder `json:"orders,omitempty"`
 	Filters PaginateFilters `json:"filters,omitempty"`
@@ -41,13 +60,16 @@ type PaginateRequest struct {
 	Offset  uint64          `json:"offset,omitempty"`
 }
 
+// PaginateFilters represents a nested collection of key-value pairs to define filter conditions for pagination queries.
 type PaginateFilters map[string]any
 
+// PaginateOrder represents an ordering rule for paginated queries, including the key to order by and the sorting direction.
 type PaginateOrder struct {
 	Key  string `json:"key"`
 	Desc bool   `json:"desc"`
 }
 
+// paginate is a generic struct for managing database pagination with configurable options and SQL building capabilities.
 type paginate[T any] struct {
 	whitelist     []string
 	fields        []op.Alias
@@ -63,19 +85,33 @@ type paginate[T any] struct {
 	maxSliceLen   uint64
 }
 
+// Constants representing query operators for pagination filters.
 const (
-	PaginateOr        = "$or"
-	PaginateAnd       = "$and"
-	PaginateIn        = "$in"
-	PaginateNotIn     = "$nin"
-	PaginateEq        = "$eq"
-	PaginateNe        = "$ne"
-	PaginateLt        = "$lt"
-	PaginateGt        = "$gt"
-	PaginateLte       = "$lte"
-	PaginateGte       = "$gte"
-	PaginateLike      = "$like"
-	PaginateLeftLike  = "$llike"
+	// PaginateOr represents the logical OR operator.
+	PaginateOr = "$or"
+	// PaginateAnd represents the logical AND operator.
+	PaginateAnd = "$and"
+	// PaginateIn represents the inclusion operator.
+	PaginateIn = "$in"
+	// PaginateNotIn represents the exclusion operator.
+	PaginateNotIn = "$nin"
+	// PaginateEq represents the equality operator.
+	PaginateEq = "$eq"
+	// PaginateNe represents the not equal operator.
+	PaginateNe = "$ne"
+	// PaginateLt represents the less than operator.
+	PaginateLt = "$lt"
+	// PaginateGt represents the greater than operator.
+	PaginateGt = "$gt"
+	// PaginateLte represents the less than or equal operator.
+	PaginateLte = "$lte"
+	// PaginateGte represents the greater than or equal operator.
+	PaginateGte = "$gte"
+	// PaginateLike represents the LIKE operator for pattern matching.
+	PaginateLike = "$like"
+	// PaginateLeftLike represents the LEFT LIKE operator for patterns starting with a wildcard.
+	PaginateLeftLike = "$llike"
+	// PaginateRightLike represents the RIGHT LIKE operator for patterns ending with a wildcard.
 	PaginateRightLike = "$rlike"
 )
 
@@ -87,12 +123,17 @@ var (
 )
 
 const (
-	defaultMinLimit    = uint64(1)
-	defaultMaxLimit    = math.MaxUint64
+	// defaultMinLimit defines the default minimum limit as 1.
+	defaultMinLimit = uint64(1)
+	// defaultMaxLimit defines the default maximum limit as the maximum unsigned 64-bit integer value.
+	defaultMaxLimit = math.MaxUint64
+	// defaultFilterDepth specifies the default depth for filters, set to 5.
 	defaultFilterDepth = uint64(5)
+	// defaultMaxSliceLen specifies the default maximum length for slices, set to 10.
 	defaultMaxSliceLen = uint64(10)
 )
 
+// Paginate creates a Paginator instance for querying and paginating rows from the specified SQL table.
 func Paginate[T any](table string, request *PaginateRequest) Paginator[T] {
 	return &paginate[T]{
 		request:     request,
@@ -106,6 +147,7 @@ func Paginate[T any](table string, request *PaginateRequest) Paginator[T] {
 	}
 }
 
+// With executes the pagination query with the provided context and database, returning the result or an error.
 func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[T], error) {
 	if len(pg.fields) == 0 {
 		return nil, fmt.Errorf("fields is empty. Please specify returning by .Fields()")
@@ -170,81 +212,99 @@ func (pg *paginate[T]) With(ctx context.Context, db Queryable) (*PaginateResult[
 	}, nil
 }
 
+// WhiteList sets list of allowed keys for filtering or ordering and returns the updated Paginator instance.
 func (pg *paginate[T]) WhiteList(whitelist ...string) Paginator[T] {
 	pg.whitelist = whitelist
 	return pg
 }
 
+// Fields sets the selected fields for the pagination and returns the updated Paginator instance.
 func (pg *paginate[T]) Fields(fields ...op.Alias) Paginator[T] {
 	pg.fields = fields
 	return pg
 }
 
+// MaxFilterDepth sets the maximum allowed depth for nested filters in a pagination query and returns the updated paginator.
 func (pg *paginate[T]) MaxFilterDepth(depth uint64) Paginator[T] {
 	pg.maxDepth = depth
 	return pg
 }
 
+// MaxSliceLen sets the maximum allowed length for filter slice values and returns the updated Paginator instance.
 func (pg *paginate[T]) MaxSliceLen(maxLen uint64) Paginator[T] {
 	pg.maxSliceLen = maxLen
 	return pg
 }
 
+// MaxLimit sets the maximum allowable limit for pagination and updates the paginator instance.
 func (pg *paginate[T]) MaxLimit(limit uint64) Paginator[T] {
 	pg.maxLimit = limit
 	return pg
 }
 
+// MinLimit sets the minimum limit for paginated query results and returns the Paginator instance.
 func (pg *paginate[T]) MinLimit(limit uint64) Paginator[T] {
 	pg.minLimit = limit
 	return pg
 }
 
+// Where adds a condition to the SQL query using the provided Sqler expression and returns the updated Paginator.
 func (pg *paginate[T]) Where(exp driver.Sqler) Paginator[T] {
 	pg.rowsSb.Where(exp)
 	return pg
 }
 
+// Join adds a JOIN clause to the query using the specified table and ON condition, returning the updated Paginator instance.
 func (pg *paginate[T]) Join(table any, on driver.Sqler) Paginator[T] {
 	pg.rowsSb.Join(table, on)
 	return pg
 }
 
+// LeftJoin adds a LEFT JOIN clause to the query using the specified table and join condition.
+// It updates the SelectBuilder instance and returns the current paginator instance.
 func (pg *paginate[T]) LeftJoin(table any, on driver.Sqler) Paginator[T] {
 	pg.rowsSb.LeftJoin(table, on)
 	return pg
 }
 
+// RightJoin adds a RIGHT JOIN clause to the query using the specified table and ON condition.
 func (pg *paginate[T]) RightJoin(table any, on driver.Sqler) Paginator[T] {
 	pg.rowsSb.RightJoin(table, on)
 	return pg
 }
 
+// InnerJoin adds an INNER JOIN clause to the query with the specified table and condition, returning the modified Paginator.
 func (pg *paginate[T]) InnerJoin(table any, on driver.Sqler) Paginator[T] {
 	pg.rowsSb.InnerJoin(table, on)
 	return pg
 }
 
+// CrossJoin adds a CROSS JOIN clause to the query with the specified table and ON condition.
+// It returns the paginator instance for chaining other query modifications.
 func (pg *paginate[T]) CrossJoin(table any, on driver.Sqler) Paginator[T] {
 	pg.rowsSb.CrossJoin(table, on)
 	return pg
 }
 
+// GroupBy sets the GROUP BY clause for the query using the provided grouping columns. It returns the updated Paginator.
 func (pg *paginate[T]) GroupBy(groups ...any) Paginator[T] {
 	pg.rowsSb.GroupBy(groups...)
 	return pg
 }
 
+// LogQuery sets a LoggerHandler to log SQL query strings, their arguments, and any errors encountered during execution.
 func (pg *paginate[T]) LogQuery(lh LoggerHandler) Paginator[T] {
 	pg.loggerQuery = lh
 	return pg
 }
 
+// LogCounter sets a logger function to handle SQL counting queries and associated data or errors during pagination.
 func (pg *paginate[T]) LogCounter(lh LoggerHandler) Paginator[T] {
 	pg.loggerCounter = lh
 	return pg
 }
 
+// parseOrders validates and converts a slice of PaginateOrder into a slice of op.Order based on allowed keys and sort direction.
 func (pg *paginate[T]) parseOrders(orders []PaginateOrder) ([]op.Order, error) {
 	result := make([]op.Order, 0, len(orders))
 	for i := range orders {
@@ -262,6 +322,7 @@ func (pg *paginate[T]) parseOrders(orders []PaginateOrder) ([]op.Order, error) {
 	return result, nil
 }
 
+// isAllowedKey checks if the given key exists in the whitelist, returning true if it is allowed or false otherwise.
 func (pg *paginate[T]) isAllowedKey(key string) bool {
 	for _, k := range pg.whitelist {
 		if k == key {
@@ -272,6 +333,8 @@ func (pg *paginate[T]) isAllowedKey(key string) bool {
 	return false
 }
 
+// parseFilters processes nested filter conditions into a logical AND expression while enforcing depth and key restrictions.
+// It validates the input structure, ensures allowed keys are used, and prevents exceeding maximum recursion depth or slice length.
 func (pg *paginate[T]) parseFilters(filters PaginateFilters, depth uint64) (op.And, error) {
 	if filters == nil {
 		return nil, nil
@@ -366,6 +429,7 @@ func (pg *paginate[T]) parseFilters(filters PaginateFilters, depth uint64) (op.A
 	return and, nil
 }
 
+// checkOperatorValue validates the operator and value combination for a filter, returning an error if invalid.
 func (pg *paginate[T]) checkOperatorValue(operator, key string, value any) error {
 	if operator == PaginateIn || operator == PaginateNotIn {
 		if s, ok := value.([]any); ok {
@@ -403,6 +467,8 @@ func (pg *paginate[T]) checkOperatorValue(operator, key string, value any) error
 	)
 }
 
+// getFilterOperator maps a filter operator to the corresponding SQL condition based on the key and value provided.
+// Returns a driver.Sqler instance representing the SQL expression or an error if the operator or value is invalid.
 func getFilterOperator(operator, key string, value any) (driver.Sqler, error) {
 	switch operator {
 	case PaginateEq:
@@ -442,6 +508,8 @@ func getFilterOperator(operator, key string, value any) (driver.Sqler, error) {
 	return nil, fmt.Errorf("invalid filter operator: %s", operator)
 }
 
+// appendToAndGroup appends a logical group (AND/OR) to an existing AND collection if the group is not empty.
+// Returns the updated AND collection.
 func appendToAndGroup[T interface{ op.Or | op.And }](and op.And, group T) op.And {
 	if len(group) == 0 {
 		return and
@@ -452,6 +520,7 @@ func appendToAndGroup[T interface{ op.Or | op.And }](and op.And, group T) op.And
 	return append(and, group[0])
 }
 
+// isPrimitiveValue checks if a given value is a primitive type (bool, string, or float64) or nil, returning true if it is.
 func isPrimitiveValue(val any) bool {
 	if val == nil {
 		return true
@@ -465,6 +534,7 @@ func isPrimitiveValue(val any) bool {
 	return false
 }
 
+// isPrimitiveSlice checks if all elements in the provided slice are primitive types (bool, string, or float64) or nil.
 func isPrimitiveSlice(s []any) bool {
 	for _, item := range s {
 		if !isPrimitiveValue(item) {

@@ -6,6 +6,7 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+// NewSqlOptions creates a new instance of SqlOptions with predefined configurations for postgres.
 func NewSqlOptions() *driver.SqlOptions {
 	return driver.NewSqlOptions(
 		driver.WithSafeColumns(),
