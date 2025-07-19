@@ -21,13 +21,13 @@ var (
 	timeZero  = []byte("0")
 )
 
-// IsZero reports whether t represents zero time,
-// this is a wrapper around the method `time.Time.IsZero()`
+// IsZero reports whether t represents zero time.
+// This is a wrapper around the method `time.Time.IsZero()`.
 func (zt ZeroTime) IsZero() bool {
 	return time.Time(zt).IsZero()
 }
 
-// Time return time.Time
+// Time return time.Time.
 func (zt ZeroTime) Time() time.Time {
 	return time.Time(zt)
 }
@@ -55,8 +55,8 @@ func (zt *ZeroTime) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// String returns the time formatted using the format string
-// "2006-01-02 15:04:05.999999999 -0700 MST"
+// String returns the time formatted using the format string.
+// "2006-01-02 15:04:05.999999999 -0700 MST".
 func (zt ZeroTime) String() string {
 	return time.Time(zt).String()
 }

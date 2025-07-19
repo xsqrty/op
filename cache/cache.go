@@ -20,7 +20,7 @@ type Result struct {
 
 type Args map[string]any
 
-type ArgData struct {
+type ArgLabel struct {
 	Key string
 }
 
@@ -35,8 +35,8 @@ type container struct {
 	resOnce sync.Once
 }
 
-func Arg(key string) *ArgData {
-	return &ArgData{Key: key}
+func Arg(key string) *ArgLabel {
+	return &ArgLabel{Key: key}
 }
 
 func New(input driver.Sqler) Container {
@@ -77,7 +77,7 @@ func PrepareArgs(res *Result, sql string, args []any) {
 	res.ArgsIndexes = make(map[string]int)
 
 	for i := range res.Args {
-		if arg, ok := res.Args[i].(*ArgData); ok {
+		if arg, ok := res.Args[i].(*ArgLabel); ok {
 			res.ArgsIndexes[arg.Key] = i
 		}
 	}

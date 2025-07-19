@@ -14,6 +14,7 @@ type mockZeroStruct struct {
 }
 
 func TestZeroJson(t *testing.T) {
+	t.Parallel()
 	mz := mockZeroStruct{}
 	require.NoError(t, json.Unmarshal([]byte(`{}`), &mz))
 

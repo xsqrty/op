@@ -47,7 +47,7 @@ func TestReturnableCache(t *testing.T) {
 			sql,
 		)
 		require.Len(t, args, 2)
-		require.IsType(t, &cache.ArgData{}, args[0])
+		require.IsType(t, &cache.ArgLabel{}, args[0])
 		require.Equal(t, uint64(1), args[1])
 
 		sql, args, err = q.PreparedSql(testutil.NewDefaultOptions())

@@ -12,6 +12,7 @@ type (
 	OpenOption func(options *openOptions)
 )
 
+// openOptions sqlite pool configuration
 type openOptions struct {
 	maxIdleCount int
 	maxOpen      int
@@ -19,6 +20,7 @@ type openOptions struct {
 	maxIdleTime  time.Duration
 }
 
+// Open establishes a connection to the sqlite database.
 func Open(dsn string, options ...OpenOption) (db.ConnPool, error) {
 	pool, err := sql.Open("sqlite3", dsn)
 	if err != nil {
@@ -60,12 +62,12 @@ func Open(dsn string, options ...OpenOption) (db.ConnPool, error) {
 // WithMaxIdleConns sets the maximum number of connections in the idle
 // connection pool.
 //
-// If MaxOpenConns is greater than 0 but less than the new MaxIdleConns,
+// If MaxOpenConns are greater than 0 but less than the new MaxIdleConns,
 // then the new MaxIdleConns will be reduced to match the MaxOpenConns limit.
 //
 // If n <= 0, no idle connections are retained.
 //
-// The default max idle connections is currently 2. This may change in
+// The default max idle connections are currently 2. This may change in
 // a future release.
 func WithMaxIdleConns(n int) OpenOption {
 	return func(options *openOptions) {

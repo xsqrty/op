@@ -8,6 +8,7 @@ import (
 )
 
 func TestNewSqlOptions(t *testing.T) {
+	t.Parallel()
 	options := NewSqlOptions()
 	sql, args, err := driver.Sql(driver.Pure("?", 1), options)
 	cast := options.CastFormat(sql, "INTEGER")

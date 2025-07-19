@@ -39,13 +39,13 @@ type pgxExecResult struct {
 	commonTags *pgconn.CommandTag
 }
 
-type pgxTxProp string
+type pgxTxType string
 
 var pgxTxOptions = pgx.TxOptions{
 	IsoLevel: pgx.ReadCommitted,
 }
 
-var pgxTxKey = pgxTxProp("tx")
+var pgxTxKey = pgxTxType("tx")
 
 var _ db.ConnPool = (*pgxAdapter)(nil)
 

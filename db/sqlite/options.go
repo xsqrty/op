@@ -6,6 +6,7 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+// NewSqlOptions creates a new instance of SqlOptions with predefined configurations for sqlite.
 func NewSqlOptions() *driver.SqlOptions {
 	return driver.NewSqlOptions(
 		driver.WithSafeColumns(),

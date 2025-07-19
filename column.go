@@ -7,8 +7,10 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+// Column represents a SQL column name or identifier.
 type Column string
 
+// Alias represents a SQL aliasing interface for renaming expressions or columns in SQL queries.
 type Alias interface {
 	Alias() string
 	IsPureColumn() bool
@@ -17,6 +19,7 @@ type Alias interface {
 	Sql(*driver.SqlOptions) (string, []any, error)
 }
 
+// alias represents a SQL alias for renaming columns or expressions in queries.
 type alias struct {
 	name         string
 	expr         driver.Sqler
@@ -25,10 +28,12 @@ type alias struct {
 
 const delimByte = '.'
 
+// As creates a new alias with the given name and SQL expression.
 func As(name string, expr driver.Sqler) Alias {
 	return &alias{name: name, expr: expr}
 }
 
+// Sql generates a SQL representation of the Column using the given SqlOptions. Returns the SQL string, arguments, and error.
 func (c Column) Sql(options *driver.SqlOptions) (string, []any, error) {
 	var buf strings.Builder
 	val := []byte(c)
@@ -65,18 +70,22 @@ func (c Column) Sql(options *driver.SqlOptions) (string, []any, error) {
 	return buf.String(), nil, nil
 }
 
+// IsZero returns true if the Column is empty (zero value).
 func (c Column) IsZero() bool {
 	return len(c) == 0
 }
 
+// Alias returns the alias name associated with the object.
 func (a *alias) Alias() string {
 	return a.name
 }
 
+// IsPureColumn checks if the alias represents a pure column without any associated expression or transformation.
 func (a *alias) IsPureColumn() bool {
 	return a.isPureColumn
 }
 
+// Rename changes the alias name to the provided value.
 func (a *alias) Rename(name string) {
 	a.name = name
 	if a.isPureColumn {
@@ -84,6 +93,7 @@ func (a *alias) Rename(name string) {
 	}
 }
 
+// Clone creates a deep copy of the alias object.
 func (a *alias) Clone() Alias {
 	return &alias{
 		name:         a.name,
@@ -92,6 +102,7 @@ func (a *alias) Clone() Alias {
 	}
 }
 
+// Sql generates the SQL string, arguments, and error for the alias, handling expression wrapping and alias formatting.
 func (a *alias) Sql(options *driver.SqlOptions) (string, []any, error) {
 	if a.isPureColumn {
 		return a.expr.Sql(options)
@@ -112,10 +123,12 @@ func (a *alias) Sql(options *driver.SqlOptions) (string, []any, error) {
 	return sql, args, nil
 }
 
+// ColumnAlias creates a new alias for a simple column reference.
 func ColumnAlias(col Column) Alias {
 	return &alias{isPureColumn: true, expr: col, name: string(col)}
 }
 
+// wrapAlias generates a SQL string representation of an alias, applying wrapping and validation based on provided options.
 func wrapAlias(al *alias, options *driver.SqlOptions) (string, error) {
 	var buf strings.Builder
 	if options.IsWrapAlias {
@@ -138,6 +151,7 @@ func wrapAlias(al *alias, options *driver.SqlOptions) (string, error) {
 	return buf.String(), nil
 }
 
+// isAllowedColumnByte checks if the given byte is a valid character for a column name.
 func isAllowedColumnByte(b byte) bool {
 	if b >= 'a' && b <= 'z' ||
 		b >= 'A' && b <= 'Z' ||

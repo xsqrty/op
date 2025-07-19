@@ -19,6 +19,19 @@ linters:
     - goconst
     - misspell
     - staticcheck
+    - errorlint
+    - asasalint
+    - bidichk
+    - copyloopvar
+    - decorder
+    - dogsled
+    - dupword
+    - fatcontext
+    - funcorder
+    - godox
+    - importas
+    - nilnil
+    - paralleltest
   settings:
     cyclop:
       max-complexity: 25

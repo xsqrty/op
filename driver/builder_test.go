@@ -16,6 +16,8 @@ func (e errorSqler) Sql(_ *SqlOptions) (string, []any, error) {
 }
 
 func TestSql(t *testing.T) {
+	t.Parallel()
+
 	options := NewSqlOptions(
 		WithPlaceholderFormat(func(n int) string {
 			return "$" + strconv.Itoa(n)
@@ -39,6 +41,7 @@ func TestSql(t *testing.T) {
 }
 
 func TestSqlWithPlaceholders(t *testing.T) {
+	t.Parallel()
 	sql, args, err := Sql(
 		Pure("?? ?,?,?", 1, "2", 3.01),
 		NewSqlOptions(WithPlaceholderFormat(func(i int) string {

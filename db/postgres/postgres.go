@@ -9,8 +9,10 @@ import (
 	"github.com/xsqrty/op/db"
 )
 
+// OpenOption is a function type that applies modifications to a pgxpool.Config instance.
 type OpenOption func(options *pgxpool.Config)
 
+// Open initializes a connection pool to a database using the provided DSN and optional configuration options.
 func Open(ctx context.Context, dsn string, options ...OpenOption) (db.ConnPool, error) {
 	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -73,7 +75,7 @@ func WithBeforeClose(f func(*pgx.Conn)) OpenOption {
 	}
 }
 
-// WithMaxConnLifetime is the duration since creation after which a connection will be automatically closed.
+// WithMaxConnLifetime duration since creation after which a connection will be automatically closed.
 func WithMaxConnLifetime(d time.Duration) OpenOption {
 	return func(options *pgxpool.Config) {
 		options.MaxConnLifetime = d
@@ -88,7 +90,7 @@ func WithMaxConnLifetimeJitter(d time.Duration) OpenOption {
 	}
 }
 
-// WithMaxConnIdleTime is the duration after which an idle connection will be automatically closed by the health check.
+// WithMaxConnIdleTime is the duration after which the health check will automatically close an idle connection.
 func WithMaxConnIdleTime(d time.Duration) OpenOption {
 	return func(options *pgxpool.Config) {
 		options.MaxConnIdleTime = d
@@ -102,7 +104,7 @@ func WithMaxConns(n int32) OpenOption {
 	}
 }
 
-// WithMinConns is the minimum size of the pool. After connection closes, the pool might dip below MinConns. A low
+// WithMinConns is the minimum size of the pool. After the connection closes, the pool might dip below MinConns. A low
 // number of MinConns might mean the pool is empty after MaxConnLifetime until the health check has a chance
 // to create new connections.
 func WithMinConns(n int32) OpenOption {
@@ -115,7 +117,7 @@ func WithMinConns(n int32) OpenOption {
 // there are always idle connections available. This can help reduce tail latencies during request processing,
 // as you can avoid the latency of establishing a new connection while handling requests. It is superior
 // to MinConns for this purpose.
-// Similar to MinConns, the pool might temporarily dip below MinIdleConns after connection closes.
+// Similar to MinConns, the pool might temporarily dip below MinIdleConns after the connection closes.
 func WithMinIdleConns(n int32) OpenOption {
 	return func(options *pgxpool.Config) {
 		options.MinIdleConns = n

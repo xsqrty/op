@@ -10,6 +10,7 @@ import (
 )
 
 func TestNative(t *testing.T) {
+	t.Parallel()
 	EachConn(t, func(conn db.ConnPool) {
 		require.Equal(t, errRollback, Transact(t, ctx, conn, func(ctx context.Context) error {
 			seed, err := DataSeed(ctx, conn)

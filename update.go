@@ -7,21 +7,34 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+// UpdateBuilder is an interface for building SQL UPDATE statements with optional WHERE and RETURNING clauses.
 type UpdateBuilder interface {
+	// Where adds a condition to the WHERE clause of the UPDATE statement.
 	Where(exp driver.Sqler) UpdateBuilder
+	// Returning adds keys to the RETURNING clause of the UPDATE statement.
 	Returning(keys ...any) UpdateBuilder
+	// LimitReturningOne sets the SELECT statement to return only one row.
 	LimitReturningOne()
+	// With returns the alias of the primary table in the UPDATE statement.
 	With() string
+	// UsingTables retrieves the list of tables used in the UPDATE statement.
 	UsingTables() []string
+	// GetReturning gets the list of aliases in the RETURNING clause.
 	GetReturning() []Alias
+	// SetReturning sets the aliases for the RETURNING clause.
 	SetReturning(keys []Alias)
+	// CounterType gets the type of execution counter for the UPDATE operation.
 	CounterType() CounterType
+	// PreparedSql generates a prepared SQL statement with placeholders and arguments.
 	PreparedSql(options *driver.SqlOptions) (string, []any, error)
+	// Sql generates the SQL string and associated arguments.
 	Sql(options *driver.SqlOptions) (string, []any, error)
 }
 
+// Updates is a type alias for a map with string keys and values of any type, used to define update fields and their values.
 type Updates map[string]any
 
+// updateBuilder is an internal implementation for building SQL UPDATE statements with support for WHERE and RETURNING clauses.
 type updateBuilder struct {
 	table         Alias
 	returningKeys []Alias
@@ -31,8 +44,10 @@ type updateBuilder struct {
 	err           error
 }
 
+// enforces that UpdateBuilder implements the Returnable interface at compile-time.
 var _ Returnable = UpdateBuilder(nil)
 
+// Update creates an UpdateBuilder for constructing an SQL UPDATE statement with specified table and update fields.
 func Update(table any, updates Updates) UpdateBuilder {
 	ub := &updateBuilder{}
 	if table != nil {
@@ -51,6 +66,7 @@ func Update(table any, updates Updates) UpdateBuilder {
 	return ub
 }
 
+// Where adds a condition to the WHERE clause of the SQL UPDATE statement. Returns the UpdateBuilder for chaining.
 func (ub *updateBuilder) Where(exp driver.Sqler) UpdateBuilder {
 	if exp != nil {
 		ub.where = append(ub.where, exp)
@@ -59,6 +75,7 @@ func (ub *updateBuilder) Where(exp driver.Sqler) UpdateBuilder {
 	return ub
 }
 
+// Returning adds keys to the RETURNING clause of an SQL UPDATE statement and returns the UpdateBuilder for chaining.
 func (ub *updateBuilder) Returning(keys ...any) UpdateBuilder {
 	err := ub.setReturning(keys)
 	if err != nil {
@@ -68,6 +85,7 @@ func (ub *updateBuilder) Returning(keys ...any) UpdateBuilder {
 	return ub
 }
 
+// Sql generates the SQL string, arguments, and error for the constructed UPDATE statement based on the given options.
 func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []any, error) {
 	if ub.err != nil {
 		return "", nil, ub.err
@@ -126,34 +144,43 @@ func (ub *updateBuilder) Sql(options *driver.SqlOptions) (string, []any, error) 
 	return buf.String(), args, nil
 }
 
+// PreparedSql generates a prepared SQL query string and arguments using the provided SqlOptions. It also returns any error.
 func (ub *updateBuilder) PreparedSql(
 	options *driver.SqlOptions,
 ) (sql string, args []any, err error) {
 	return driver.Sql(ub, options)
 }
 
+// LimitReturningOne sets the SELECT statement to return only one row.
+// The method implements the interface Returnable.
 func (ub *updateBuilder) LimitReturningOne() {}
 
+// With returns the alias of the table associated with the updateBuilder.
 func (ub *updateBuilder) With() string {
 	return ub.table.Alias()
 }
 
+// UsingTables returns a slice of strings containing the alias of the table associated with the updateBuilder.
 func (ub *updateBuilder) UsingTables() []string {
 	return []string{ub.table.Alias()}
 }
 
+// GetReturning retrieves the list of aliases specified in the RETURNING clause of the SQL UPDATE statement.
 func (ub *updateBuilder) GetReturning() []Alias {
 	return ub.returningKeys
 }
 
+// SetReturning sets the list of aliases to be included in the RETURNING clause of the SQL UPDATE statement.
 func (ub *updateBuilder) SetReturning(keys []Alias) {
 	ub.returningKeys = keys
 }
 
+// CounterType returns the CounterType value representing the execution type, typically used to signal CounterExec.
 func (ub *updateBuilder) CounterType() CounterType {
 	return CounterExec
 }
 
+// setReturning processes the given keys, validates their types, and sets them as aliases in the RETURNING clause.
 func (ub *updateBuilder) setReturning(keys []any) error {
 	ub.returningKeys = nil
 	for i := range keys {
@@ -170,6 +197,7 @@ func (ub *updateBuilder) setReturning(keys []any) error {
 	return nil
 }
 
+// setUpdates processes the update map and initializes the updateBuilder with update keys and their corresponding values.
 func (ub *updateBuilder) setUpdates(updates Updates) {
 	ub.updatesKeys = nil
 	ub.updatesVals = nil

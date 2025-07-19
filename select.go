@@ -7,28 +7,51 @@ import (
 	"github.com/xsqrty/op/driver"
 )
 
+// SelectBuilder defines an interface for constructing SQL SELECT statements programmatically.
 type SelectBuilder interface {
+	// Distinct adds a DISTINCT clause to the query, optionally for the specified columns or expressions.
 	Distinct(args ...string) SelectBuilder
+	// All resets the SELECT clause of the query to include all columns (*) in the result set.
 	All() SelectBuilder
+	// From sets the FROM clause of the SQL query with the specified table or subquery.
 	From(from any) SelectBuilder
+	// Where adds a WHERE clause to the SQL query using the provided expression. Allows filtering based on conditions.
 	Where(exp driver.Sqler) SelectBuilder
+	// Having adds a HAVING clause to the SQL query with the specified condition expressed as a driver.Sqler.
 	Having(exp driver.Sqler) SelectBuilder
+	// Join adds a JOIN clause to the SQL query, specifying the table to join and the condition for the join.
 	Join(table any, on driver.Sqler) SelectBuilder
+	// LeftJoin adds a LEFT JOIN clause to the SQL query using the specified table and ON condition.
 	LeftJoin(table any, on driver.Sqler) SelectBuilder
+	// RightJoin adds a RIGHT JOIN clause to the query with the specified table and ON condition.
 	RightJoin(table any, on driver.Sqler) SelectBuilder
+	// InnerJoin adds an INNER JOIN clause to the query with the specified table and ON condition.
 	InnerJoin(table any, on driver.Sqler) SelectBuilder
+	// CrossJoin adds a CROSS JOIN clause to the query with the specified table and join condition.
 	CrossJoin(table any, on driver.Sqler) SelectBuilder
+	// Limit sets the maximum number of rows to return in the SQL SELECT statement. It accepts a positive integer value.
 	Limit(limit uint64) SelectBuilder
+	// Offset sets the OFFSET clause for the SQL query to skip a specified number of rows and returns the updated SelectBuilder.
 	Offset(offset uint64) SelectBuilder
+	// GroupBy adds a GROUP BY clause to the SQL query, allowing for aggregation based on the specified columns or expressions.
 	GroupBy(groups ...any) SelectBuilder
+	// OrderBy adds one or more ordering criteria to the SELECT query, specifying the sort order of the result set.
 	OrderBy(orders ...Order) SelectBuilder
+	// LimitReturningOne sets the SELECT statement to return only one row
 	LimitReturningOne()
+	// With returns the name of the table used in the current SELECT statement.
 	With() string
+	// UsingTables retrieves the list of table names referenced in the SQL query being constructed.
 	UsingTables() []string
+	// GetReturning returns a slice of Alias objects representing the columns or expressions marked for returning in a query.
 	GetReturning() []Alias
+	// SetReturning sets the list of fields to be returned in the SQL query, defined as an array of Alias objects.
 	SetReturning(keys []Alias)
+	// CounterType determines the type of counter used in the SQL query, such as CounterQuery or CounterExec.
 	CounterType() CounterType
+	// PreparedSql constructs a prepared SQL statement with placeholders and arguments based on the provided SqlOptions.
 	PreparedSql(options *driver.SqlOptions) (sql string, args []any, err error)
+	// Sql generates a SQL query string, its associated arguments, and an error if any, based on the provided SqlOptions.
 	Sql(options *driver.SqlOptions) (sql string, args []any, err error)
 }
 

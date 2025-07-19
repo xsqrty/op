@@ -10,6 +10,7 @@ import (
 )
 
 func TestCache(t *testing.T) {
+	t.Parallel()
 	c := New(op.Select().From("users").Where(op.Eq("id", Arg("id"))))
 
 	for i := 0; i < 2; i++ {
